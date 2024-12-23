@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="摘要：点云法向量估计；区域增长聚类。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="点云三维重建 PolyFit算法解析与改进（四）">
+<meta property="og:url" content="http://example.com/2024/11/20/PolyFit04/index.html">
+<meta property="og:site_name" content="前排瞌睡杂物堆">
+<meta property="og:description" content="摘要：点云法向量估计；区域增长聚类。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2024/11/20/PolyFit04/01.png">
+<meta property="og:image" content="http://example.com/2024/11/20/PolyFit04/02.png">
+<meta property="og:image" content="http://example.com/2024/11/20/PolyFit04/03.png">
+<meta property="og:image" content="http://example.com/2024/11/20/PolyFit04/04.png">
+<meta property="og:image" content="http://example.com/2024/11/20/PolyFit04/05.png">
+<meta property="article:published_time" content="2024-11-20T15:50:22.000Z">
+<meta property="article:modified_time" content="2024-12-23T13:13:50.378Z">
+<meta property="article:author" content="Sleeping-Ahead">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="点云处理">
+<meta property="article:tag" content="法向量估计">
+<meta property="article:tag" content="区域聚类">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2024/11/20/PolyFit04/01.png">
+
+<link rel="canonical" href="http://example.com/2024/11/20/PolyFit04/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>点云三维重建 PolyFit算法解析与改进（四） | 前排瞌睡杂物堆</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">前排瞌睡杂物堆</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">LKH 求存，探路，躬行，旁通，振兴，延续。<br>第二阶段，启动！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/11/20/PolyFit04/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Sleeping-Ahead">
+      <meta itemprop="description" content="主要用途是技术/算法的记录博客哒！<br>偶尔摘抄点杂七杂八的随想~~<br>嘻嘻ԅ(¯﹃¯ԅ)">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="前排瞌睡杂物堆">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          点云三维重建 PolyFit算法解析与改进（四）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-11-20 23:50:22" itemprop="dateCreated datePublished" datetime="2024-11-20T23:50:22+08:00">2024-11-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-12-23 21:13:50" itemprop="dateModified" datetime="2024-12-23T21:13:50+08:00">2024-12-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%82%B9%E4%BA%91%E4%B8%89%E7%BB%B4%E9%87%8D%E5%BB%BA/" itemprop="url" rel="index"><span itemprop="name">点云三维重建</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>20 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：<br>点云法向量估计；区域增长聚类。</p>
+<span id="more"></span>
+
+<h2 id="法向量估计"><a href="#法向量估计" class="headerlink" title="法向量估计"></a>法向量估计</h2><p>上一节中，输入数据经底部填充后可视作完整的建筑物点云。到了这一节，目标是把点云按某种特征聚类分割为各个区域，方便面片模型的构造，从而以更抽象、简化的方法来描述实体。<br>从整体粗略地看，常规建筑的轮廓是方方正正、横平竖直的，它的表面结构可拆分成若干个不同大小和形状的面状区域，也就是说，在多数情况下可以用单个平面来近似描述建筑的局部表面，用它来表示建筑上一小块区域的朝向。那为了能准确地将建筑物分割为数个呈面状的区域，常见方法是按平面模型来对点云进行多次随机采样一致性或进行区域增长。<br><img src="01.png" alt="点云底部填充" title="点云底部填充"></p>
+<p>从这一块开始，后面的大部分内容都是对PolyFit算法的照搬，官方的调用示例可以去看下这个页面<sup>[14]</sup>，它的源码主要封装在compute_confidences和hypothesis这两个文件中。我为了方便调试和理解，把其中用到的摘抄到自己的程序里，这里面熟悉的功能我会捋一下代码逻辑，不太懂的部分我就跳了。<br>继续顺着上一节的预处理往后讲，接下来要计算点的法向量并分割点云区域。法向量是点的一种特征值，定义上，对穿过点的拟合曲面，它在该点的垂直向量称为点的法向量，由于用作曲面拟合的近邻点数和拟合公式是可变的，法向量并不是一个确定值，所以法向量的计算过程也叫估计点的法向量。</p>
+<p>下图是源自<sup>[15]</sup>的法向量概念图，感觉他讲得挺明白的，法向量的概念可以抽象成对函数在某一点上的微分。<br><img src="02.png" alt="法向量概念图" title="法向量概念图"></p>
+<p>以前用GPT和这篇知乎回答<sup>[16]</sup>记下法向量估计的步骤，可参考一二。<br><img src="03.png" alt="法向量估计步骤" title="法向量估计步骤"></p>
+<h3 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h3><p>代码实现在RegionSegProcess的EstimateNormals()。调用CGAL的PCA法向量估计，先定义个std::pair&lt;Kernel::Point_3, Kernel::Vector_3&gt;的二元对象，前者存点坐标后者存法向量。邻域点的个数用_num_kSearch存储，定义在头文件的私有变量那，默认初值是18，感觉估算得太慢&#x2F;不需要太平缓的值，就【Alt+F12】速览定义把值改小些。<br>由此得到的法线方向虽然有正有负，不影响后面的聚类。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">RegionSegProcess::EstimateNormals</span><span class="params">(<span class="type">const</span> PointCloud &amp; cloud, PointCloud &amp; cloud_normal)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//1、转格式，cloud -&gt; list_normal</span></span><br><span class="line">	std::list&lt;PointVectorPair&gt; list_normal;<span class="comment">//二元列表_法向量</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; cloud.<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		PointVectorPair pair_temp;</span><br><span class="line">		pair_temp.first = cloud.<span class="built_in">point</span>(i);</span><br><span class="line">		list_normal.<span class="built_in">push_back</span>(pair_temp);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	<span class="comment">//2、法向量计算</span></span><br><span class="line">	<span class="comment">//使用固定邻近点来计算法线，pca_estimate_normals()需要一个范围的点，以及属性映射来访问每个点的位置和法线</span></span><br><span class="line">	CGAL::<span class="built_in">pca_estimate_normals</span>&lt;CGAL::Parallel_if_available_tag&gt;(list_normal,</span><br><span class="line">		_num_kSearch,</span><br><span class="line">		CGAL::parameters::<span class="built_in">point_map</span>(CGAL::<span class="built_in">First_of_pair_property_map</span>&lt;PointVectorPair&gt;())</span><br><span class="line">		.<span class="built_in">normal_map</span>(CGAL::<span class="built_in">Second_of_pair_property_map</span>&lt;PointVectorPair&gt;()));</span><br><span class="line"></span><br><span class="line">	<span class="comment">///输出测试_list格式的法向量</span></span><br><span class="line">	<span class="comment">//for (const PointVectorPair&amp; pair : list_normal)</span></span><br><span class="line">	<span class="comment">//	std::cout &lt;&lt; pair.first &lt;&lt; &quot;  &quot; &lt;&lt; pair.second &lt;&lt; std::endl;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> 0</span></span><br><span class="line">	<span class="comment">//3、可选操作：法线定向。//后续用不上</span></span><br><span class="line">	<span class="comment">//需要包含#include &lt;CGAL/mst_orient_normals.h&gt;</span></span><br><span class="line">	<span class="comment">//mst_orient_normals()需要一系列点，以及属性映射来访问每个点的位置和法线。</span></span><br><span class="line">	std::list&lt;PointVectorPair&gt;::iterator unoriented_points_begin =</span><br><span class="line">		CGAL::<span class="built_in">mst_orient_normals</span>(list_normal, _num_kSearch,</span><br><span class="line">			CGAL::parameters::<span class="built_in">point_map</span>(CGAL::<span class="built_in">First_of_pair_property_map</span>&lt;PointVectorPair&gt;())</span><br><span class="line">			.<span class="built_in">normal_map</span>(CGAL::<span class="built_in">Second_of_pair_property_map</span>&lt;PointVectorPair&gt;()));</span><br><span class="line">	<span class="comment">//删除具有无方向法线的点，计划调用期望定向法线的重建算法</span></span><br><span class="line">	list_normal.<span class="built_in">erase</span>(unoriented_points_begin, list_normal.<span class="built_in">end</span>());</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">//3、法线定向，后续用不上</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//4、转格式，list_normal -&gt; cloud_normal</span></span><br><span class="line">	cloud_normal.<span class="built_in">clear</span>();</span><br><span class="line">	cloud_normal.<span class="built_in">add_normal_map</span>();</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">const</span> PointVectorPair&amp; pair : list_normal)</span><br><span class="line">		cloud_normal.<span class="built_in">insert</span>(pair.first, pair.second);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="代码实现-常用的法向量估计"><a href="#代码实现-常用的法向量估计" class="headerlink" title="代码实现_常用的法向量估计"></a>代码实现_常用的法向量估计</h3><p>再记录一些常用的法向量估计方法：<br>（1）特征值分解，再取最小特征值的特征向量作为点云的法向量。注意此处的d值为点云质心到坐标原点的距离，返回的Eigen::Vector4f内存储了穿过质心的平面的系数，前三项即为法向量值。Eigen实现。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Eigen::Vector4f <span class="title">GeometryCal::FittingPlane</span><span class="params">(<span class="type">const</span> std::vector&lt;Eigen::Vector3f&gt;&amp; points)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//检查输入点有效性</span></span><br><span class="line">	<span class="keyword">if</span> (points.<span class="built_in">size</span>() &lt; <span class="number">3</span>)</span><br><span class="line">		<span class="keyword">return</span> Eigen::<span class="built_in">Vector4f</span>(<span class="number">-999</span>, <span class="number">-999</span>, <span class="number">-999</span>, <span class="number">-999</span>);</span><br><span class="line"></span><br><span class="line">	<span class="function">Eigen::MatrixXf <span class="title">matrix</span><span class="params">(points.size(), <span class="number">3</span>)</span></span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; points.<span class="built_in">size</span>(); ++i)</span><br><span class="line">		matrix.<span class="built_in">row</span>(i) = points[i].<span class="built_in">transpose</span>();</span><br><span class="line"></span><br><span class="line">	Eigen::Vector3f center = matrix.<span class="built_in">colwise</span>().<span class="built_in">mean</span>();<span class="comment">//计算质心</span></span><br><span class="line">	Eigen::MatrixXf mat_center = matrix.<span class="built_in">rowwise</span>() - center.<span class="built_in">transpose</span>();<span class="comment">//点矩阵去中心化</span></span><br><span class="line">	Eigen::Matrix3f covariance = (mat_center.<span class="built_in">transpose</span>() * mat_center) / points.<span class="built_in">size</span>();<span class="comment">//协方差矩阵</span></span><br><span class="line">	<span class="function">Eigen::SelfAdjointEigenSolver&lt;Eigen::Matrix3f&gt; <span class="title">solver</span><span class="params">(covariance)</span></span>;<span class="comment">//对协方差矩阵进行特征值分解</span></span><br><span class="line">	Eigen::Vector3f normal = solver.<span class="built_in">eigenvectors</span>().<span class="built_in">col</span>(<span class="number">0</span>);<span class="comment">//最小特征值对应的特征向量</span></span><br><span class="line">	<span class="type">float</span> d = -normal.<span class="built_in">dot</span>(center);<span class="comment">//平面系数</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> Eigen::<span class="built_in">Vector4f</span>(<span class="built_in">normal</span>(<span class="number">0</span>), <span class="built_in">normal</span>(<span class="number">1</span>), <span class="built_in">normal</span>(<span class="number">2</span>), d);<span class="comment">//平面系数</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>（2）PCL调用NormalEstimationOMP所构造的方法。cloud_pcl是类型为pcl::PointXYZ的输入点云，normals为估计的法向量。<br>需要在顶部引用：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pcl/search/kdtree.h&gt;</span><span class="comment">//kd树</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pcl/features/normal_3d_omp.h&gt;</span><span class="comment">//法向量估计加速</span></span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//计算法向量</span></span><br><span class="line"><span class="type">int</span> k = <span class="number">30</span>;<span class="comment">//近邻点数</span></span><br><span class="line">pcl::NormalEstimationOMP&lt;pcl::PointXYZ, pcl::Normal&gt; ne;</span><br><span class="line">ne.<span class="built_in">setInputCloud</span>(cloud_pcl);</span><br><span class="line">pcl::search::KdTree&lt;pcl::PointXYZ&gt;::<span class="function">Ptr <span class="title">tree</span><span class="params">(<span class="keyword">new</span> pcl::search::KdTree&lt;pcl::PointXYZ&gt;)</span></span>;</span><br><span class="line">ne.<span class="built_in">setSearchMethod</span>(tree);</span><br><span class="line">ne.<span class="built_in">setKSearch</span>(k);</span><br><span class="line">ne.<span class="built_in">setNumberOfThreads</span>(<span class="number">10</span>);<span class="comment">//设置的多线程数量</span></span><br><span class="line">pcl::PointCloud&lt;pcl::Normal&gt;::<span class="function">Ptr <span class="title">normals</span><span class="params">(<span class="keyword">new</span> pcl::PointCloud&lt;pcl::Normal&gt;)</span></span>;</span><br><span class="line">ne.<span class="built_in">compute</span>(*normals);</span><br></pre></td></tr></table></figure>
+<p>（3）加权最小二乘计算平面系数。先用树结构获取邻近点下标及平方距离，按平面方程构造矩阵方程。比较特别的是里面的权重阵，根据平方距离给一个反距离权重，范围在（0，1]，示例中设置1e-2范围内的邻近点权重固定为1，超过该范围外的点离搜索点越远权重越小。<br>planes存储搜索点的拟合平面系数，前三项为估计的法向量，第四项为搜索点到全局坐标系原点的距离。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">pragma</span> omp parallel for</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i_p = <span class="number">0</span>; i_p &lt; cloud.<span class="built_in">size</span>(); ++i_p)</span><br><span class="line">	&#123;</span><br><span class="line">		pcl::PointXYZ p_search;</span><br><span class="line">		p_search.<span class="built_in">getVector3fMap</span>() = cloud[i_p].point;</span><br><span class="line"></span><br><span class="line">		std::vector&lt;<span class="type">int</span>&gt; indices;</span><br><span class="line">		std::vector&lt;<span class="type">float</span>&gt; distances;</span><br><span class="line">		tree.<span class="built_in">nearestKSearch</span>(p_search, k, indices, distances);</span><br><span class="line"></span><br><span class="line">		<span class="comment">//构建邻域点数据</span></span><br><span class="line">		<span class="function">Eigen::MatrixXf <span class="title">X</span><span class="params">(indices.size(), <span class="number">3</span>)</span></span>;<span class="comment">//平面方程的参数阵</span></span><br><span class="line">		<span class="function">Eigen::VectorXf <span class="title">Z</span><span class="params">(indices.size())</span></span>;<span class="comment">//高度阵</span></span><br><span class="line">		<span class="function">Eigen::VectorXf <span class="title">W</span><span class="params">(indices.size())</span></span>;<span class="comment">//权重阵</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; indices.<span class="built_in">size</span>(); ++i)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="type">int</span> idx = indices[i];</span><br><span class="line">			<span class="type">const</span> Eigen::Vector3f&amp; p_neighbor = cloud[idx].point;</span><br><span class="line">			<span class="type">float</span> x = p_neighbor.<span class="built_in">x</span>() - p_search.x;</span><br><span class="line">			<span class="type">float</span> y = p_neighbor.<span class="built_in">y</span>() - p_search.y;</span><br><span class="line">			<span class="type">float</span> z = p_neighbor.<span class="built_in">z</span>();<span class="comment">//用偏移后的x,y描述邻域点相对于中心点的局部分布特性，不需要减去p_search.z</span></span><br><span class="line"></span><br><span class="line">			<span class="comment">//填充平面方程矩阵z = ax + by + c</span></span><br><span class="line">			<span class="built_in">X</span>(i, <span class="number">0</span>) = x;</span><br><span class="line">			<span class="built_in">X</span>(i, <span class="number">1</span>) = y;</span><br><span class="line">			<span class="built_in">X</span>(i, <span class="number">2</span>) = <span class="number">1.0f</span>;</span><br><span class="line">			<span class="built_in">Z</span>(i) = z;</span><br><span class="line"></span><br><span class="line">			<span class="built_in">W</span>(i) = (distances[i] &lt; <span class="number">1e-4</span>) ? <span class="number">1.0f</span> : (<span class="number">1e-4</span> / distances[i]);<span class="comment">//按平方距离计算反距离权重</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//加权最小二乘法拟合//权重对角阵、权重修正后的参数阵、目标值</span></span><br><span class="line">		Eigen::MatrixXf W_diag = W.<span class="built_in">asDiagonal</span>();</span><br><span class="line">		Eigen::MatrixXf XtWX = X.<span class="built_in">transpose</span>() * W_diag * X;<span class="comment">//Xt * W * X</span></span><br><span class="line">		Eigen::VectorXf XtWZ = X.<span class="built_in">transpose</span>() * W_diag * Z;<span class="comment">//Xt * W * Z</span></span><br><span class="line">		<span class="comment">//解方程，拟合平面系数[a, b, c, d]</span></span><br><span class="line">		Eigen::VectorXf coeffs = XtWX.<span class="built_in">ldlt</span>().<span class="built_in">solve</span>(XtWZ);</span><br><span class="line">		<span class="type">float</span> d = -(<span class="built_in">coeffs</span>(<span class="number">0</span>) * p_search.x + <span class="built_in">coeffs</span>(<span class="number">1</span>) * p_search.y + <span class="built_in">coeffs</span>(<span class="number">2</span>) * p_search.z);<span class="comment">//平面系数//注：求该值不需要法向量归一化</span></span><br><span class="line">		<span class="comment">//if (XtWX.ldlt().info() != Eigen::Success)</span></span><br><span class="line">		<span class="comment">//	std::cout &lt;&lt; &quot;奇异矩阵&quot; &lt;&lt; std::endl;</span></span><br><span class="line"></span><br><span class="line">		planes[i_p] = Eigen::<span class="built_in">Vector4f</span>(<span class="built_in">coeffs</span>(<span class="number">0</span>), <span class="built_in">coeffs</span>(<span class="number">1</span>), <span class="built_in">coeffs</span>(<span class="number">2</span>), d);</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是邻域点数为18的法线可视化结果，一般设置的邻近点个数越多，估算的法线朝向越趋向一致，换言之是更容易聚类出大块的区域，但也可能会让原本不同朝向的区域聚合到一起，理论上要按点密度取个合适的值。<br><img src="04.png" alt="法向量可视化" title="法向量可视化"></p>
+<h2 id="区域聚类"><a href="#区域聚类" class="headerlink" title="区域聚类"></a>区域聚类</h2><p>有了法向量数据，开始对点云进行区域增长聚类。PolyFit代码里用的是区域增长方法（论文中用的是RANSAC区域聚类），效果不错我直接照搬。该方法基于种子点逐步扩展的思想，通过迭代合并具有相似属性的邻近信息（如法向量、颜色或强度）来形成连续区域。这里聚类依赖的属性信息就是点的法向量，它的聚类步骤猜测如下：<br>（1）创建聚类Q。<br>（2）按某规则选取一个种子点，近邻搜索最近的k个点；求每个近邻点与种子点的法向量夹角，夹角小于阈值的点纳入到聚类中；<br>（3）将种子点标记为已处理，从聚类中选取未标记点为新的种子点，重复（2）；<br>（4）聚类中的所有点已被标记，按最小二乘法对点云拟合平面，聚类中点到平面的距离小于阈值的剔除；<br>（5）若聚类Q的点数小于阈值，移除Q。重复（1）到（4）直至所有点都被标记过。</p>
+<h3 id="代码实现-1"><a href="#代码实现-1" class="headerlink" title="代码实现"></a>代码实现</h3><p>具体的代码实现在RegionSegProcess的RegionGrowing()。区域增长聚类后能得到一个二维容器regions，表示各个聚类区域内点的索引。为了方便可视化显示，给cloud_seg附加颜色和分区序号的属性，通过遍历regions中的索引值从cloud_normal中拷贝相应的点，并赋予同一区域的点相同颜色。CGAL的聚类方法还能导出所有未满足聚类条件的点的索引，我把这一类点return了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">PointCloud <span class="title">RegionSegProcess::RegionGrowing</span><span class="params">(<span class="type">const</span> PointCloud &amp; cloud_normal, PointCloud &amp; cloud_seg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//1、创建类的实例</span></span><br><span class="line">	<span class="function">Neighbor_query <span class="title">neighbor_query</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">		cloud_normal,</span></span></span><br><span class="line"><span class="params"><span class="function">		_num_kSearch,</span></span></span><br><span class="line"><span class="params"><span class="function">		cloud_normal.point_map())</span></span>;<span class="comment">//k近邻搜索邻域查询的实例</span></span><br><span class="line">	<span class="comment">//Neighbor_query neighbor_query(</span></span><br><span class="line">	<span class="comment">//	cloud_normal,</span></span><br><span class="line">	<span class="comment">//	search_sphere_radius);//半径搜索邻域查询的实例//易报错，弃用</span></span><br><span class="line">	<span class="function">Region_type <span class="title">region_type</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">		cloud_normal,</span></span></span><br><span class="line"><span class="params"><span class="function">		_max_distance_point2plane, _max_accepted_angle, _min_region_pointNum,</span></span></span><br><span class="line"><span class="params"><span class="function">		cloud_normal.point_map(), cloud_normal.normal_map())</span></span>;<span class="comment">//区域类型的实例</span></span><br><span class="line">	<span class="function">Region_growing <span class="title">region_growing</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">		cloud_normal,</span></span></span><br><span class="line"><span class="params"><span class="function">		neighbor_query, region_type)</span></span>;<span class="comment">//区域增长的实例</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//2、区域增长分割算法</span></span><br><span class="line">	CGAL::Timer timer;<span class="comment">//时间计数的实例</span></span><br><span class="line">	timer.<span class="built_in">start</span>();</span><br><span class="line">	std::vector&lt;std::vector&lt;std::<span class="type">size_t</span>&gt;&gt; regions;</span><br><span class="line">	region_growing.<span class="built_in">detect</span>(std::<span class="built_in">back_inserter</span>(regions));<span class="comment">//算法运行</span></span><br><span class="line">	timer.<span class="built_in">stop</span>();</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;有 &quot;</span> &lt;&lt; regions.<span class="built_in">size</span>() &lt;&lt; <span class="string">&quot; 个分割区域已生成，运行耗时 &quot;</span> &lt;&lt; timer.<span class="built_in">time</span>() &lt;&lt; <span class="string">&quot; 秒&quot;</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//3、根据region中的区域索引，拷贝cloud_normal至cloud_seg中，附上随机颜色</span></span><br><span class="line">	cloud_seg.<span class="built_in">clear</span>();</span><br><span class="line">	cloud_seg.<span class="built_in">add_normal_map</span>();<span class="comment">//为cloud_seg添加normal属性</span></span><br><span class="line">	cloud_seg.<span class="built_in">add_property_map</span>&lt;<span class="type">int</span>&gt;(<span class="string">&quot;region_map&quot;</span>).first;<span class="comment">//为cloud_seg添加区域索引属性</span></span><br><span class="line">	cloud_seg.<span class="built_in">add_property_map</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(<span class="string">&quot;red&quot;</span>).first;<span class="comment">//为cloud_seg添加color属性</span></span><br><span class="line">	cloud_seg.<span class="built_in">add_property_map</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(<span class="string">&quot;green&quot;</span>).first;</span><br><span class="line">	cloud_seg.<span class="built_in">add_property_map</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(<span class="string">&quot;blue&quot;</span>).first;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; regions.<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//设置随机颜色</span></span><br><span class="line">		<span class="type">const</span> <span class="type">unsigned</span> <span class="type">char</span> r = <span class="built_in">static_cast</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(std::<span class="built_in">rand</span>() % <span class="number">256</span>);</span><br><span class="line">		<span class="type">const</span> <span class="type">unsigned</span> <span class="type">char</span> g = <span class="built_in">static_cast</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(std::<span class="built_in">rand</span>() % <span class="number">256</span>);</span><br><span class="line">		<span class="type">const</span> <span class="type">unsigned</span> <span class="type">char</span> b = <span class="built_in">static_cast</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(std::<span class="built_in">rand</span>() % <span class="number">256</span>);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span>&amp; index : regions[i])</span><br><span class="line">		&#123;</span><br><span class="line">			PointCloud cloud_piece;</span><br><span class="line">			cloud_piece.<span class="built_in">add_normal_map</span>();</span><br><span class="line">			<span class="type">const</span> <span class="keyword">auto</span>&amp; key = *(cloud_normal.<span class="built_in">begin</span>() + index);<span class="comment">//根据regions[i]建立对cloud_normal的索引</span></span><br><span class="line">			cloud_piece.<span class="built_in">insert</span>(cloud_normal, key);</span><br><span class="line">			cloud_piece.<span class="built_in">add_property_map</span>&lt;<span class="type">int</span>&gt;(<span class="string">&quot;region_map&quot;</span>, i).first;</span><br><span class="line">			cloud_piece.<span class="built_in">add_property_map</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(<span class="string">&quot;red&quot;</span>, r).first;</span><br><span class="line">			cloud_piece.<span class="built_in">add_property_map</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(<span class="string">&quot;green&quot;</span>, g).first;</span><br><span class="line">			cloud_piece.<span class="built_in">add_property_map</span>&lt;<span class="type">unsigned</span> <span class="type">char</span>&gt;(<span class="string">&quot;blue&quot;</span>, b).first;</span><br><span class="line"></span><br><span class="line">			cloud_seg.<span class="built_in">insert</span>(cloud_piece, *cloud_piece.<span class="built_in">begin</span>());</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//4、统计未分割的区域</span></span><br><span class="line">	std::vector&lt;std::<span class="type">size_t</span>&gt; unassigned_items;<span class="comment">//因未满足条件而未被分割点的区域</span></span><br><span class="line">	region_growing.<span class="built_in">unassigned_items</span>(std::<span class="built_in">back_inserter</span>(unassigned_items));</span><br><span class="line"></span><br><span class="line">	PointCloud cloud_unassigned;</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span> index : unassigned_items)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">const</span> <span class="keyword">auto</span>&amp; key = *(cloud_normal.<span class="built_in">begin</span>() + index);<span class="comment">//索引</span></span><br><span class="line">		<span class="type">const</span> Kernel::Point_3&amp; point = <span class="built_in">get</span>(cloud_normal.<span class="built_in">point_map</span>(), key);</span><br><span class="line">		cloud_unassigned.<span class="built_in">insert</span>(point);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> cloud_unassigned;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<img src="05.png" alt="点云区域聚类" title="点云区域聚类">
+
+<h2 id="主函数调用"><a href="#主函数调用" class="headerlink" title="主函数调用"></a>主函数调用</h2><p>主函数run.cpp中，通过以下代码实现点云的法向量估计、区域聚类。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">RegionSegProcess obj_seg;</span><br><span class="line">PointCloud cloud_normal;</span><br><span class="line"><span class="comment">//obj_seg.ChangeParameter(18, 2.5, 45, 350);//参数修改</span></span><br><span class="line"><span class="comment">//obj_seg.ChangeParameter(12, 2, 30, 50);//参数修改</span></span><br><span class="line">obj_seg.<span class="built_in">EstimateNormals</span>(cloud_input, cloud_normal);<span class="comment">//估计点云的法向量</span></span><br><span class="line">PointCloud cloud_seg;</span><br><span class="line">obj_seg.<span class="built_in">RegionGrowing</span>(cloud_normal, cloud_seg);<span class="comment">//区域生长分割</span></span><br><span class="line"><span class="comment">//弃用，原数据平移后可能因位数问题导致法向量偏移，致使重建面片偏移</span></span><br><span class="line"><span class="comment">//obj_pre.Coordination2Original(cloud_seg);//分割完毕，将数据平移至原始坐标</span></span><br><span class="line"><span class="function">PointCloud <span class="title">cloud_seg_copy</span><span class="params">(cloud_seg)</span></span>;</span><br><span class="line">obj_pre.<span class="built_in">Coordination2Original</span>(cloud_seg_copy);<span class="comment">//分割完毕，将数据平移至原始坐标</span></span><br><span class="line">obj_file.<span class="built_in">SaveCloud</span>(path_output, obj_file.<span class="built_in">GetFileName</span>(file_path) + <span class="string">&quot;_region&quot;</span>, cloud_seg);</span><br></pre></td></tr></table></figure>
+<p>聚类结果受点的法向量、点到拟合平面的最大距离限制、点间的法向量夹角限制、聚类的最小点数这四个参数影响，对它们的设置一并放到RegionSegProcess的ChangeParameter()中进行。<br>所以最后再说说这一块的参数设置：<br>num_kSearch的值越小，则越少的邻近点参与到平面拟合中，导致点之间的法向量变化越大，最后聚类区域间的间隙越大，也就是建筑物墙角、屋檐这类的转角处越明显；<br>max_accepted_angle的效果类似，该值设置得越小，能得到越多细碎的区域。<br>max_distance_point2plane和min_region_pointNum我认为是去噪参数，前者去除离群点，后者剔除过于细碎的区域。</p>
+<p>另外，如果要处理大型建筑物，建议把法线间的最大角度阈值调大，聚类点数最小值调大，从而使聚类结果中只留有大区域点云。</p>
+<h2 id="参考文献-引用"><a href="#参考文献-引用" class="headerlink" title="参考文献&amp;引用"></a>参考文献&amp;引用</h2><p><span>[1] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/">https://3d.bk.tudelft.nl/liangliang/</a></span><br><span>[2] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html">https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html</a></span><br><span>[3] <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=_0brfDFkIkc">https://www.youtube.com/watch?v=_0brfDFkIkc</a></span><br><span>[4] Linfu X ,Han H ,Qing Z , et al. Combined Rule-Based and Hypothesis-Based Method for Building Model Reconstruction from Photogrammetric Point Clouds [J]. Remote Sensing, 2021, 13 (6): 1107-1107.</span><br><span> [5] Nan L , Wonka P .PolyFit: Polygonal Surface Reconstruction from Point Clouds[C]&#x2F;&#x2F;International Conference on Computer Vision.IEEE, 2017.</span><br>[6]<a target="_blank" rel="noopener" href="https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip">https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip</a><br>[7]<a target="_blank" rel="noopener" href="https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z">https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z</a><br>[8]<a target="_blank" rel="noopener" href="https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip">https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip</a><br>[9]<a target="_blank" rel="noopener" href="https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip">https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip</a><br>[10]<a target="_blank" rel="noopener" href="https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe">https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe</a><br>[11]<a target="_blank" rel="noopener" href="https://zenodo.org/records/4390295#.Y0eIodJBxuV">https://zenodo.org/records/4390295#.Y0eIodJBxuV</a><br>[12]<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/277599635/answer/2149719454">https://www.zhihu.com/question/277599635/answer/2149719454</a><br>[13]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br><font color=#CD5C5C>[14]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction">https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction</a><br>[15]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/90858099">https://zhuanlan.zhihu.com/p/90858099</a><br>[16]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br></font></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Sleeping-Ahead
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2024/11/20/PolyFit04/" title="点云三维重建 PolyFit算法解析与改进（四）">http://example.com/2024/11/20/PolyFit04/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
+              <a href="/tags/%E7%82%B9%E4%BA%91%E5%A4%84%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> 点云处理</a>
+              <a href="/tags/%E6%B3%95%E5%90%91%E9%87%8F%E4%BC%B0%E8%AE%A1/" rel="tag"><i class="fa fa-tag"></i> 法向量估计</a>
+              <a href="/tags/%E5%8C%BA%E5%9F%9F%E8%81%9A%E7%B1%BB/" rel="tag"><i class="fa fa-tag"></i> 区域聚类</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/11/19/PolyFit03/" rel="prev" title="点云三维重建 PolyFit算法解析与改进（三）">
+      <i class="fa fa-chevron-left"></i> 点云三维重建 PolyFit算法解析与改进（三）
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%95%E5%90%91%E9%87%8F%E4%BC%B0%E8%AE%A1"><span class="nav-number">1.</span> <span class="nav-text">法向量估计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.1.</span> <span class="nav-text">代码实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0-%E5%B8%B8%E7%94%A8%E7%9A%84%E6%B3%95%E5%90%91%E9%87%8F%E4%BC%B0%E8%AE%A1"><span class="nav-number">1.2.</span> <span class="nav-text">代码实现_常用的法向量估计</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8C%BA%E5%9F%9F%E8%81%9A%E7%B1%BB"><span class="nav-number">2.</span> <span class="nav-text">区域聚类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0-1"><span class="nav-number">2.1.</span> <span class="nav-text">代码实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">主函数调用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE-%E5%BC%95%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">参考文献&amp;引用</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sleeping-Ahead"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Sleeping-Ahead</p>
+  <div class="site-description" itemprop="description">主要用途是技术/算法的记录博客哒！<br>偶尔摘抄点杂七杂八的随想~~<br>嘻嘻ԅ(¯﹃¯ԅ)</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Sleeping-ahead" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Sleeping-ahead" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://space.bilibili.com/179235151" title="bilibili → https:&#x2F;&#x2F;space.bilibili.com&#x2F;179235151" rel="noopener" target="_blank"><i class="iconfont icon-bilibili fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sleeping-Ahead</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">21k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">38 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("03/01/2023 10:00:00"); //此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒.";
+    }
+setInterval("createtime()",250);
+</script>
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
