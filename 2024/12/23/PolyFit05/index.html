@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="摘要：聚类点云的区域优化；构造包围盒；生成候选平面；点云平面；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="点云三维重建 PolyFit算法解析与改进（五）">
+<meta property="og:url" content="http://example.com/2024/12/23/PolyFit05/index.html">
+<meta property="og:site_name" content="前排瞌睡杂物堆">
+<meta property="og:description" content="摘要：聚类点云的区域优化；构造包围盒；生成候选平面；点云平面；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2024/12/23/PolyFit05/00.gif">
+<meta property="og:image" content="http://example.com/2024/12/23/PolyFit05/01.png">
+<meta property="og:image" content="http://example.com/2024/12/23/PolyFit05/02.png">
+<meta property="og:image" content="http://example.com/2024/12/23/PolyFit05/03.png">
+<meta property="og:image" content="http://example.com/2024/12/23/PolyFit05/04.png">
+<meta property="article:published_time" content="2024-12-23T13:18:02.000Z">
+<meta property="article:modified_time" content="2025-01-21T13:58:24.809Z">
+<meta property="article:author" content="Sleeping-Ahead">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="点云处理">
+<meta property="article:tag" content="面片结构处理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2024/12/23/PolyFit05/00.gif">
+
+<link rel="canonical" href="http://example.com/2024/12/23/PolyFit05/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>点云三维重建 PolyFit算法解析与改进（五） | 前排瞌睡杂物堆</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">前排瞌睡杂物堆</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">LKH 求存，探路，躬行，旁通，振兴，延续。<br>第二阶段，启动！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/12/23/PolyFit05/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Sleeping-Ahead">
+      <meta itemprop="description" content="主要用途是技术/算法的记录博客哒！<br>偶尔摘抄点杂七杂八的随想~~<br>嘻嘻ԅ(¯﹃¯ԅ)">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="前排瞌睡杂物堆">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          点云三维重建 PolyFit算法解析与改进（五）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-12-23 21:18:02" itemprop="dateCreated datePublished" datetime="2024-12-23T21:18:02+08:00">2024-12-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-01-21 21:58:24" itemprop="dateModified" datetime="2025-01-21T21:58:24+08:00">2025-01-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%82%B9%E4%BA%91%E4%B8%89%E7%BB%B4%E9%87%8D%E5%BB%BA/" itemprop="url" rel="index"><span itemprop="name">点云三维重建</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>27k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>49 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：<br>聚类点云的区域优化；构造包围盒；生成候选平面；点云平面；</p>
+<span id="more"></span>
+
+<p>上一节对点云做了聚类处理，在这一节中要开始根据各个聚类区域来生成相应的平面多边形。<br>提前再叠个甲，后续部分的模型重建，代码基本均来源于</p>
+<blockquote>
+<p>&lt;CGAL&#x2F;Polygonal_surface_reconstruction.h&gt;<br>&lt;CGAL&#x2F;Polygonal_surface_reconstruction&#x2F;internal&#x2F;hypothesis.h&gt;</p>
+</blockquote>
+<p>这两个引用文件，它的作者也正是NanLiangLiang老师，我只按我的喜好把它们摘出来做了下封装，打了些注释说明，且印象中只在这个框架下的候选平面那块做了些许改动，所以不要指望它相较源程序有多大优化。</p>
+<h2 id="构建假设-候选-平面的整体流程"><a href="#构建假设-候选-平面的整体流程" class="headerlink" title="构建假设(候选)平面的整体流程"></a>构建假设(候选)平面的整体流程</h2><p>好，先回main()函数中看一眼，这里创建了一个CGAL::Surface_mesh&lt;Kernel：：Point_3&gt;类型的对象mesh_candidate，它是一个用于表示和处理三维表面网格的模板类。通过调用HypothesisPlaneProcess中的BuildHypothesisPlane()，可构建点云的候选(&#x2F;假设)面片集合。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HypothesisPlaneProcess obj_hp;</span><br><span class="line">CGAL::Surface_mesh&lt;Kernel::Point_3&gt; mesh_candidate;<span class="comment">//多边形网络的候选表面集</span></span><br><span class="line">obj_hp.<span class="built_in">BuildHypothesisPlane</span>(cloud_seg, mesh_candidate);<span class="comment">//构建点云的面片集合</span></span><br><span class="line"><span class="comment">//obj_hp.Coordination2Original(mesh_candidate, obj_pre._xOffset, obj_pre._yOffset, obj_pre._zOffset);//网络平移至原始坐标</span></span><br><span class="line">obj_file.<span class="built_in">SaveColorOBJ</span>(path_output, obj_file.<span class="built_in">GetFileName</span>(file_path) + <span class="string">&quot;_mesh_candidate&quot;</span>, mesh_candidate);</span><br><span class="line"><span class="comment">//obj_file.SaveOBJ(path_output, obj_file.GetFileName(file_path) + &quot;_mesh_candidate_nocolor&quot;, mesh_candidate);</span></span><br></pre></td></tr></table></figure>
+
+<p>围绕mesh_candidate，函数BuildHypothesisPlane()基于聚类点云cloud_seg进行面片的生成、处理，整个流程分为聚类点云的区域优化、构建包围盒面片、构建包围盒范围的候选平面、平面相交细分、候选面简化及面片属性计算这6个阶段。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">HypothesisPlaneProcess::BuildHypothesisPlane</span><span class="params">(<span class="type">const</span> PointCloud &amp; cloud_region, CGAL::Surface_mesh&lt;Kernel::Point_3&gt;&amp; mesh_candidate)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	CGAL::Timer timer;<span class="comment">//时间计数的实例</span></span><br><span class="line">	timer.<span class="built_in">start</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">//0、转格式，cloud_region -&gt; cloud_plane</span></span><br><span class="line">	std::vector&lt;PNI&gt; point_pni;</span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; cloud_region.<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		PNI temp;</span><br><span class="line">		temp.<span class="built_in">get</span>&lt;<span class="number">0</span>&gt;() = cloud_region.<span class="built_in">point</span>(i);</span><br><span class="line">		temp.<span class="built_in">get</span>&lt;<span class="number">1</span>&gt;() = cloud_region.<span class="built_in">normal</span>(i);</span><br><span class="line">		temp.<span class="built_in">get</span>&lt;<span class="number">2</span>&gt;() = cloud_region.<span class="built_in">property_map</span>&lt;<span class="type">int</span>&gt;(<span class="string">&quot;region_map&quot;</span>).first[i];</span><br><span class="line">		point_pni.<span class="built_in">push_back</span>(temp);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//2023.8.21 注意，cloud_plane要全程引用（等同于全局变量），不然容易触发~Point_set_with_planes()从而清掉 planar_segments</span></span><br><span class="line">	CGAL::<span class="function">internal::Point_set_with_planes&lt;Kernel&gt; <span class="title">cloud_plane</span><span class="params">(point_pni,<span class="comment">//点云对象</span></span></span></span><br><span class="line"><span class="params"><span class="function">		CGAL::Nth_of_tuple_property_map&lt;<span class="number">0</span>, PNI&gt;(),<span class="comment">//指定类型为Point_map</span></span></span></span><br><span class="line"><span class="params"><span class="function">		CGAL::Nth_of_tuple_property_map&lt;<span class="number">1</span>, PNI&gt;(),<span class="comment">//Normal_map</span></span></span></span><br><span class="line"><span class="params"><span class="function">		CGAL::Nth_of_tuple_property_map&lt;<span class="number">2</span>, PNI&gt;())</span></span>;<span class="comment">//Plane_index_map</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (cloud_plane.<span class="built_in">planar_segments</span>().<span class="built_in">size</span>() &lt; <span class="number">4</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		std::cout &lt;&lt; <span class="string">&quot;错误：重建闭合表面模型至少需要4个平面聚类，该点云只有 &quot;</span> + std::<span class="built_in">to_string</span>(cloud_plane.<span class="built_in">planar_segments</span>().<span class="built_in">size</span>()) + <span class="string">&quot; 个聚类&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">		<span class="keyword">return</span>;<span class="comment">//检查点集的平面段数量，如果小于4，则返回错误消息</span></span><br><span class="line">	&#125;</span><br><span class="line">	_cloud_plane = &amp;cloud_plane;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//1、优化点云的平面聚类（通过合并压低数量）</span></span><br><span class="line">	<span class="comment">//std::cout &lt;&lt;&quot;当前点云的平面段数量：&quot;&lt;&lt; _cloud_plane-&gt;planar_segments().size() &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="built_in">PlaneRefine</span>();</span><br><span class="line">	<span class="comment">//std::cout &lt;&lt; &quot;优化后的点云的平面段数量：&quot; &lt;&lt; _cloud_plane-&gt;planar_segments().size() &lt;&lt; std::endl;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//2、构建点云的包围盒多边形</span></span><br><span class="line">	CGAL::Surface_mesh&lt;Kernel::Point_3&gt; mesh_bbox;</span><br><span class="line">	<span class="built_in">BuildMeshBbox</span>(mesh_bbox);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//3、构建点云的候选表面多边形（跨幅延伸至包围盒的平面）</span></span><br><span class="line">	<span class="built_in">BuildMeshCandidate</span>(mesh_bbox, mesh_candidate);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//4、候选平面相交细分</span></span><br><span class="line">	<span class="comment">//2023.11.23 在包围盒平面与细分的平面上，对面的属性增加分区属性</span></span><br><span class="line">	<span class="built_in">SegMeshCandidate</span>(mesh_candidate);</span><br><span class="line">	</span><br><span class="line"></span><br><span class="line">	<span class="comment">//5.1、候选面集简化处理</span></span><br><span class="line">	<span class="comment">//SimpleMeshCandidate(mesh_candidate);//激进简化，有时重建效果巨差</span></span><br><span class="line">	<span class="built_in">SimpleMeshCandidate_V2</span>(mesh_candidate);<span class="comment">//保守简化</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//5.2、附加顶面偏好属性</span></span><br><span class="line">	<span class="built_in">AddMeshProperty</span>(mesh_candidate);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//6、计算候选面的置信度</span></span><br><span class="line">	<span class="comment">//该操作为 mesh_candidate 添加了3个属性映射,用于后续的MIP处理：</span></span><br><span class="line">	<span class="comment">//平面的支撑点数	f:num_supporting_points</span></span><br><span class="line">	<span class="comment">//平面面积			f:face_area</span></span><br><span class="line">	<span class="comment">//覆盖面积			f:covered_area</span></span><br><span class="line">	CGAL::internal::Candidate_confidences&lt;Kernel&gt; conf;</span><br><span class="line">	conf.<span class="built_in">compute</span>(cloud_plane, mesh_candidate);</span><br><span class="line"></span><br><span class="line">	<span class="comment">///输出测试_显示新加的三种属性映射</span></span><br><span class="line">	<span class="comment">//std::cout &lt;&lt; mesh_candidate.faces().size() &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="comment">//for (auto f : mesh_candidate.faces())</span></span><br><span class="line">	<span class="comment">//&#123;</span></span><br><span class="line">	<span class="comment">//	std::cout &lt;&lt; mesh_candidate.property_map&lt;Polygon_mesh::Face_index, std::size_t&gt;(&quot;f:num_supporting_points&quot;).first[f] &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="comment">//	std::cout &lt;&lt; mesh_candidate.property_map&lt;Polygon_mesh::Face_index, FT&gt;(&quot;f:face_area&quot;).first[f] &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="comment">//	std::cout &lt;&lt; mesh_candidate.property_map&lt;Polygon_mesh::Face_index, FT&gt;(&quot;f:covered_area&quot;).first[f] &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="comment">//	std::cout &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="comment">//&#125;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	timer.<span class="built_in">stop</span>();</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;有 &quot;</span> &lt;&lt; mesh_candidate.<span class="built_in">faces</span>().<span class="built_in">size</span>() &lt;&lt; <span class="string">&quot; 个候选表面已生成，运行耗时 &quot;</span> &lt;&lt; timer.<span class="built_in">time</span>() &lt;&lt; <span class="string">&quot; 秒&quot;</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">///输出测试_候选面的颜色属性//弃用</span></span><br><span class="line">	<span class="comment">//for (auto f : mesh_candidate.faces())</span></span><br><span class="line">	<span class="comment">//	std::cout &lt;&lt; mesh_candidate.property_map&lt;Polygon_mesh::Face_index, CGAL::IO::Color&gt;(&quot;f:color&quot;).first[f] &lt;&lt; std::endl;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里演示下基于聚类点云生成的平面基元结果。<br><img src="00.gif" alt="平面基元与聚类点簇叠加显示" title="平面基元与聚类点簇叠加显示"></p>
+<h2 id="聚类点云的区域优化"><a href="#聚类点云的区域优化" class="headerlink" title="聚类点云的区域优化"></a>聚类点云的区域优化</h2><p>这一个函数是想通过合并相近、法向近似的聚类来减少区域数量，从而降低计算负担。如何判断两个聚类需要合并？函数内设置了两个参数来简化聚类区域数量：点到区域最大距离的平均值avg_max_dist和区域间的法向量夹角_theta。整个流程主要分以下3步：<br>（1）计算每个聚类区域拟合平面的平均最大距离。先用最小二乘拟合聚类区域的平面，再记录点到平面的最大距离值max_dist，最后累计所有的max_dist到avg_max_dist，对这个值求平均再除以2后，得到一个衡量点是否应被纳入另一个平面范围内的值。</p>
+<p>（2）获取拟合平面的法向量，判断法向量间的夹角是否小于_theta，满足判定的两个聚类朝向近似，可进一步做合并判断。_theta的设置无严格的理论依据，我按经验调整，夹角阈值调的越大则聚类越容易被合并，导致候选面集的面数越少，也就是细节越少。<br>代码中若对向量内积绝对值的含义仍有疑惑，可以暂停看一下这里的例子。<br><img src="01.png" alt="归一化向量内积绝对值的含义" title="归一化向量内积绝对值的含义"></p>
+<p>（3）统计平面s1上是否有足够多的点离s2比较近。平面上的一个点距离另一个平面是否比较近，通过函数calNumber_points_on_plane()进行判断。是否“足够多”则通过num_threshold来判断，该值为s1平面上的点数除以5得到，似乎也是个经验调参值，我未做改动。代码中s1-&gt;s2和s2-&gt;s1都做了一遍统计，只要有任一个的统计数量能满足num_threshold，则合并两个聚类。</p>
+<h3 id="主流程"><a href="#主流程" class="headerlink" title="主流程"></a>主流程</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">HypothesisPlaneProcess::PlaneRefine</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	std::vector&lt; CGAL::internal::Planar_segment&lt;Kernel&gt;* &gt;&amp; segments = _cloud_plane-&gt;<span class="built_in">planar_segments</span>();<span class="comment">//获取 point_set_ 对象的 planar_segments() 成员变量的引用</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//1、遍历所有平面段，计算每个平面段的平均最大距离</span></span><br><span class="line">	FT avg_max_dist = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; segments.<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		CGAL::internal::Planar_segment&lt;Kernel&gt;* s = segments[i];</span><br><span class="line">		<span class="type">const</span> Kernel::Plane_3* plane = s-&gt;<span class="built_in">fit_supporting_plane</span>();<span class="comment">//拟合平面(用户可能提供无效的平面拟合</span></span><br><span class="line"></span><br><span class="line">		FT max_dist = -(std::numeric_limits&lt;FT&gt;::max)();<span class="comment">//初始化最大距离为无穷小</span></span><br><span class="line">		<span class="keyword">for</span> (std::<span class="type">size_t</span> j = <span class="number">0</span>; j &lt; s-&gt;<span class="built_in">size</span>(); ++j)</span><br><span class="line">		&#123;</span><br><span class="line">			std::<span class="type">size_t</span> idx = s-&gt;<span class="built_in">at</span>(j);<span class="comment">//点索引</span></span><br><span class="line">			<span class="type">const</span> Kernel::Point_3&amp; p = _cloud_plane-&gt;<span class="built_in">point_map</span>()[idx];</span><br><span class="line">			FT sdist = CGAL::<span class="built_in">squared_distance</span>(*plane, p);<span class="comment">//计算点到平面的距离</span></span><br><span class="line">			max_dist = (std::max)(max_dist, std::<span class="built_in">sqrt</span>(sdist));<span class="comment">//更新最大距离</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		avg_max_dist += max_dist;<span class="comment">//累加最大距离</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//计算平均最大距离</span></span><br><span class="line">	avg_max_dist /= segments.<span class="built_in">size</span>();</span><br><span class="line">	avg_max_dist /= <span class="built_in">FT</span>(<span class="number">2.0</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//2、平面段合并</span></span><br><span class="line">	<span class="comment">//FT theta = static_cast&lt;FT&gt;(CGAL_PI * 10.0 / FT(180.0));//阈值 theta，弧度制//放公有变量处</span></span><br><span class="line">	<span class="type">bool</span> merged = <span class="literal">false</span>;<span class="comment">//是否有平面段被合并</span></span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		merged = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//将平面段按照大小进行排序</span></span><br><span class="line">		<span class="comment">//点较少的分段可信度较低，因此应首先合并</span></span><br><span class="line">		std::<span class="built_in">sort</span>(segments.<span class="built_in">begin</span>(), segments.<span class="built_in">end</span>(), CGAL::internal::SegmentSizeIncreasing&lt;CGAL::internal::Planar_segment&lt;Kernel&gt;&gt;());</span><br><span class="line"></span><br><span class="line">		<span class="comment">//遍历平面段，plane1为当前，plane2为下一个</span></span><br><span class="line">		<span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; segments.<span class="built_in">size</span>(); ++i)</span><br><span class="line">		&#123;</span><br><span class="line">			CGAL::internal::Planar_segment&lt;Kernel&gt;* s1 = segments[i];</span><br><span class="line">			<span class="type">const</span> Kernel::Plane_3* plane1 = s1-&gt;<span class="built_in">supporting_plane</span>();</span><br><span class="line">			Kernel::Vector_3 n1 = plane1-&gt;<span class="built_in">orthogonal_vector</span>();</span><br><span class="line">			CGAL::internal::<span class="built_in">normalize</span>&lt;FT, Kernel::Vector_3&gt;(n1);</span><br><span class="line"></span><br><span class="line">			FT num_threshold = s1-&gt;<span class="built_in">size</span>() / <span class="built_in">FT</span>(<span class="number">5.0</span>);<span class="comment">//阈值 num_threshold</span></span><br><span class="line">			<span class="keyword">for</span> (std::<span class="type">size_t</span> j = i + <span class="number">1</span>; j &lt; segments.<span class="built_in">size</span>(); ++j)</span><br><span class="line">			&#123;</span><br><span class="line">				CGAL::internal::Planar_segment&lt;Kernel&gt;* s2 = segments[j];</span><br><span class="line">				<span class="type">const</span> Kernel::Plane_3* plane2 = s2-&gt;<span class="built_in">supporting_plane</span>();</span><br><span class="line">				Kernel::Vector_3 n2 = plane2-&gt;<span class="built_in">orthogonal_vector</span>();</span><br><span class="line">				CGAL::internal::<span class="built_in">normalize</span>&lt;FT, Kernel::Vector_3&gt;(n2);</span><br><span class="line"></span><br><span class="line">				<span class="comment">//如果两个平面段的正交向量之间的内积大于 theta，</span></span><br><span class="line">				<span class="keyword">if</span> (std::<span class="built_in">abs</span>(n1 * n2) &gt; std::<span class="built_in">cos</span>(_theta))</span><br><span class="line">				&#123;</span><br><span class="line">					<span class="comment">//且在另一平面上的点数大于 num_threshold，合并两平面</span></span><br><span class="line">					std::<span class="type">size_t</span> set1on2 = <span class="built_in">calNumber_points_on_plane</span>(s1, plane2, avg_max_dist);</span><br><span class="line">					std::<span class="type">size_t</span> set2on1 = <span class="built_in">calNumber_points_on_plane</span>(s2, plane1, avg_max_dist);</span><br><span class="line">					<span class="keyword">if</span> (set1on2 &gt; num_threshold || set2on1 &gt; num_threshold)</span><br><span class="line">					&#123;</span><br><span class="line">						<span class="built_in">plane_merge</span>(s1, s2);</span><br><span class="line">						merged = <span class="literal">true</span>;</span><br><span class="line">						<span class="keyword">break</span>;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (merged)</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">while</span> (merged);<span class="comment">//merged 若为false，则此时所有平面都不适合被合并，跳出循环</span></span><br><span class="line"></span><br><span class="line">	std::<span class="built_in">sort</span>(segments.<span class="built_in">begin</span>(), segments.<span class="built_in">end</span>(), CGAL::internal::SegmentSizeDecreasing&lt;CGAL::internal::Planar_segment&lt;Kernel&gt;&gt;());<span class="comment">//平面段按大小逆序排序</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//3、存储所有的支撑平面-&gt;_supporting_planes</span></span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; segments.<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		CGAL::internal::Planar_segment&lt;Kernel&gt;* s = segments[i];</span><br><span class="line">		<span class="type">const</span> Kernel::Plane_3* plane = s-&gt;<span class="built_in">supporting_plane</span>();</span><br><span class="line">		_supporting_planes.<span class="built_in">push_back</span>(plane);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="实现细节-统计共面的点数"><a href="#实现细节-统计共面的点数" class="headerlink" title="实现细节_统计共面的点数"></a>实现细节_统计共面的点数</h3><p>函数calNumber_points_on_plane()，计算平面s1上所有点到s2的距离，统计其中值小于avg_max_dist的点数。这些点视为平面s1离平面s2的近点，当这些点数超过一个阈值后，视两个聚类为同一个聚类。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::<span class="type">size_t</span> <span class="title">HypothesisPlaneProcess::calNumber_points_on_plane</span><span class="params">(<span class="type">const</span> CGAL::internal::Planar_segment&lt;Kernel&gt;* s, <span class="type">const</span> Kernel::Plane_3 * plane, FT dist_threshold)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(<span class="keyword">const_cast</span>&lt;CGAL::internal::Planar_segment&lt;Kernel&gt;*&gt;(s)-&gt;<span class="built_in">point_set</span>() == _cloud_plane);<span class="comment">//检查参数有效性</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//1、初始化变量</span></span><br><span class="line">	<span class="comment">//获取 point_set_ 对象的 point_map() 成员变量的引用</span></span><br><span class="line">	<span class="comment">//可访问并修改 point_set_ 对象的所有点</span></span><br><span class="line">	<span class="type">const</span> CGAL::internal::Point_set_with_planes&lt;Kernel&gt;::Point_map&amp; points = _cloud_plane-&gt;<span class="built_in">point_map</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">//2、遍历平面段 s 上的所有点</span></span><br><span class="line">	std::<span class="type">size_t</span> count = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; s-&gt;<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		std::<span class="type">size_t</span> idx = s-&gt;<span class="built_in">at</span>(i);</span><br><span class="line">		<span class="type">const</span> Kernel::Point_3&amp; p = points[idx];</span><br><span class="line"></span><br><span class="line">		<span class="comment">//3、计算点 p 到平面 plane_cutting 的距离</span></span><br><span class="line">		FT sdist = CGAL::<span class="built_in">squared_distance</span>(*plane, p);</span><br><span class="line">		FT dist = std::<span class="built_in">sqrt</span>(sdist);</span><br><span class="line">		<span class="keyword">if</span> (dist &lt; dist_threshold)<span class="comment">//如果距离小于阈值，计数+1</span></span><br><span class="line">			++count;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="实现细节-聚类合并"><a href="#实现细节-聚类合并" class="headerlink" title="实现细节_聚类合并"></a>实现细节_聚类合并</h3><p>聚类合并函数plane_merge()，源代码写得很规范，提取、合并两个聚类的点索引，并对新的聚类做一次最小二乘拟合，得到其平面系数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">HypothesisPlaneProcess::plane_merge</span><span class="params">(CGAL::internal::Planar_segment&lt;Kernel&gt;* s1, CGAL::internal::Planar_segment&lt;Kernel&gt;* s2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//检查参数有效性</span></span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(<span class="keyword">const_cast</span>&lt;CGAL::internal::Planar_segment&lt;Kernel&gt;*&gt;(s1)-&gt;<span class="built_in">point_set</span>() == _cloud_plane);</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(<span class="keyword">const_cast</span>&lt;CGAL::internal::Planar_segment&lt;Kernel&gt;*&gt;(s2)-&gt;<span class="built_in">point_set</span>() == _cloud_plane);</span><br><span class="line">	<span class="comment">//获取 point_set_ 对象的 planar_segments() 成员变量的引用</span></span><br><span class="line">	<span class="comment">//可访问并修改 point_set_ 对象的所有线段</span></span><br><span class="line">	std::vector&lt; CGAL::internal::Planar_segment&lt;Kernel&gt;* &gt;&amp; segments = _cloud_plane-&gt;<span class="built_in">planar_segments</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">//1、获取平面 s1 和 s2 的所有点的索引</span></span><br><span class="line">	std::vector&lt;std::<span class="type">size_t</span>&gt; points_indices;</span><br><span class="line">	points_indices.<span class="built_in">insert</span>(points_indices.<span class="built_in">end</span>(), s1-&gt;<span class="built_in">begin</span>(), s1-&gt;<span class="built_in">end</span>());</span><br><span class="line">	points_indices.<span class="built_in">insert</span>(points_indices.<span class="built_in">end</span>(), s2-&gt;<span class="built_in">begin</span>(), s2-&gt;<span class="built_in">end</span>());</span><br><span class="line"></span><br><span class="line">	<span class="comment">//2、创建一个新的平面 s，并设置它的所有点为 s1 + s2</span></span><br><span class="line">	CGAL::internal::Planar_segment&lt;Kernel&gt;* s = <span class="keyword">new</span> CGAL::internal::<span class="built_in">Planar_segment</span>&lt;Kernel&gt;(_cloud_plane);</span><br><span class="line">	s-&gt;<span class="built_in">insert</span>(s-&gt;<span class="built_in">end</span>(), points_indices.<span class="built_in">begin</span>(), points_indices.<span class="built_in">end</span>());</span><br><span class="line">	s-&gt;<span class="built_in">fit_supporting_plane</span>();<span class="comment">//计算线段的支撑平面</span></span><br><span class="line">	segments.<span class="built_in">push_back</span>(s);<span class="comment">//将新平面 s 添加到平面段 segments</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//3、从点集内删除平面 s1 和 s2</span></span><br><span class="line">	<span class="keyword">typename</span> std::vector&lt; CGAL::internal::Planar_segment&lt;Kernel&gt;* &gt;::iterator pos = std::<span class="built_in">find</span>(segments.<span class="built_in">begin</span>(), segments.<span class="built_in">end</span>(), s1);</span><br><span class="line">	<span class="keyword">if</span> (pos != segments.<span class="built_in">end</span>())</span><br><span class="line">	&#123;</span><br><span class="line">		CGAL::internal::Planar_segment&lt;Kernel&gt;* tmp = *pos;</span><br><span class="line">		<span class="type">const</span> Kernel::Plane_3* plane = tmp-&gt;<span class="built_in">supporting_plane</span>();</span><br><span class="line">		segments.<span class="built_in">erase</span>(pos);</span><br><span class="line">		<span class="keyword">delete</span> tmp;</span><br><span class="line">		<span class="keyword">delete</span> plane;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		std::cerr &lt;&lt; <span class="string">&quot;Fatal error: should not reach here&quot;</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">	pos = std::<span class="built_in">find</span>(segments.<span class="built_in">begin</span>(), segments.<span class="built_in">end</span>(), s2);</span><br><span class="line">	<span class="keyword">if</span> (pos != segments.<span class="built_in">end</span>())</span><br><span class="line">	&#123;</span><br><span class="line">		CGAL::internal::Planar_segment&lt;Kernel&gt;* tmp = *pos;</span><br><span class="line">		<span class="type">const</span> Kernel::Plane_3* plane = tmp-&gt;<span class="built_in">supporting_plane</span>();</span><br><span class="line">		segments.<span class="built_in">erase</span>(pos);</span><br><span class="line">		<span class="keyword">delete</span> tmp;</span><br><span class="line">		<span class="keyword">delete</span> plane;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		std::cerr &lt;&lt; <span class="string">&quot;Fatal error: should not reach here&quot;</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="思路复述"><a href="#思路复述" class="headerlink" title="思路复述"></a>思路复述</h3><p>再复述一次合并的具体实现：先是对点云中的各个区域按点数量由小到大排序，再套两层遍历，从中取两个区域s1和s2，分别拟合平面并计算平面归一化后的法向量，再然后，按照向量间的夹角公式，当这两个法向量内积的绝对值大于角度阈值的余弦值时，表示两个区域近似平行。这里的std::abs表示取绝对值，在第一、二象限中余弦值越大表示向量间的夹角越小。<br>角度值满足条件后，再作判断，统计两个区域中小于avg的点数。若这两个的任一点数大于区域总点数的五分之一时，则对两个区域进行合并，实现上是创建一个新的区域，对原先的两个区域转存点云后擦除。这里的五分之一也是个经验参数。<br>当发生合并后，将合并的flag值修改为true并跳出上述的两层遍历。最后再套了层do while循环，以这个flag值为判断，表示会一直执行直至所有区域都无法执行合并后停止。</p>
+<p>这一节对聚类点云做了个合并优化，点云点数是没变的，但点簇数&#x2F;区域数量减少了，相应的拟合平面数量也就减少了，能稍稍缓解后续的运算压力。<br>此外，有个小细节记录下，合并后的聚类可以在空间分布上不连续，毕竟以它们合并前的聚类进行平面拟合，将得到的平面系数表征为平面也是无边界、朝向近似的，不需要额外做连通性判断。平面的边界划分在下一节进行。</p>
+<h2 id="构造包围盒"><a href="#构造包围盒" class="headerlink" title="构造包围盒"></a>构造包围盒</h2><p>经上一节处理，理论上聚类点云的“分类数量”能有一定程度的减少。当然，到目前为止我们的处理对象仍为点云。到了本小节，开始以此为基础构建面元结构。<br><img src="02.png" alt="点云，去给我炒俩菜" title="点云，去给我炒俩菜"></p>
+<p>如前文所述，聚类点云按最小二乘&#x2F;PCA等方法按平面方程做拟合，得到的是平面系数，它可视化呈现出来的是一大整块无边界的平面。为了避免后续产生冗余数据，需构建平面的多边形边界。<br>因此，作者给出了一种边界划分方案：以点云的包围盒边界切分出各个平面的边界。感觉挺合理的，这样就不会在点云外面的很远处生成无用面片。<br>构建包围盒的算法封装在HypothesisPlaneProcess::BuildMeshBbox()中，首先是构建一个（略大于）点云包围盒范围的多边形mesh_box。先计算出原始点云的轴对称包围盒，取体对角线的一定长度作为偏移量，将包围盒适当地向外扩展。然后以包围盒XYZ的最大最小值创建8个点，添加到mesh_box对象中，再以一定顺序连接这些点，构造出实质为12块面片、表现为6个面下标的立方体。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//1、计算包围盒半径、偏移量</span></span><br><span class="line"><span class="type">const</span> Kernel::Iso_cuboid_3&amp; box = CGAL::<span class="built_in">bounding_box</span>(_cloud_plane-&gt;<span class="built_in">point_map</span>().<span class="built_in">begin</span>(), _cloud_plane-&gt;<span class="built_in">point_map</span>().<span class="built_in">end</span>());<span class="comment">//计算点云的包围盒</span></span><br><span class="line"></span><br><span class="line">FT dx = box.<span class="built_in">xmax</span>() - box.<span class="built_in">xmin</span>();</span><br><span class="line">FT dy = box.<span class="built_in">ymax</span>() - box.<span class="built_in">ymin</span>();</span><br><span class="line">FT dz = box.<span class="built_in">zmax</span>() - box.<span class="built_in">zmin</span>();</span><br><span class="line">FT radius = <span class="built_in">FT</span>(<span class="number">0.5</span>) * std::<span class="built_in">sqrt</span>(dx * dx + dy * dy + dz * dz);</span><br><span class="line">FT offset = radius * <span class="built_in">FT</span>(<span class="number">0.05</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//2、创建一个更大的包围盒，以确保所有点都包含其中</span></span><br><span class="line">FT xmin = box.<span class="built_in">xmin</span>() - offset, xmax = box.<span class="built_in">xmax</span>() + offset;</span><br><span class="line">FT ymin = box.<span class="built_in">ymin</span>() - offset, ymax = box.<span class="built_in">ymax</span>() + offset;</span><br><span class="line">FT zmin = box.<span class="built_in">zmin</span>() - offset, zmax = box.<span class="built_in">zmax</span>() + offset;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//3、更新 mesh 中的多边形网络为点集 points 的包围盒</span></span><br><span class="line">mesh.<span class="built_in">clear</span>();<span class="comment">//清空多边形网络</span></span><br><span class="line"><span class="comment">//添加包围盒的8个顶点</span></span><br><span class="line">Polygon_mesh::Vertex_index v0 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmin, ymin, zmin));  <span class="comment">// 0</span></span><br><span class="line">Polygon_mesh::Vertex_index v1 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmax, ymin, zmin));  <span class="comment">// 1</span></span><br><span class="line">Polygon_mesh::Vertex_index v2 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmax, ymin, zmax));  <span class="comment">// 2</span></span><br><span class="line">Polygon_mesh::Vertex_index v3 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmin, ymin, zmax));  <span class="comment">// 3</span></span><br><span class="line">Polygon_mesh::Vertex_index v4 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmax, ymax, zmax));  <span class="comment">// 4</span></span><br><span class="line">Polygon_mesh::Vertex_index v5 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmax, ymax, zmin));  <span class="comment">// 5</span></span><br><span class="line">Polygon_mesh::Vertex_index v6 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmin, ymax, zmin));  <span class="comment">// 6</span></span><br><span class="line">Polygon_mesh::Vertex_index v7 = mesh.<span class="built_in">add_vertex</span>(Kernel::<span class="built_in">Point_3</span>(xmin, ymax, zmax));  <span class="comment">// 7</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//添加包围盒的6个面</span></span><br><span class="line">mesh.<span class="built_in">add_face</span>(v0, v1, v2, v3);</span><br><span class="line">mesh.<span class="built_in">add_face</span>(v1, v5, v4, v2);</span><br><span class="line">mesh.<span class="built_in">add_face</span>(v1, v0, v6, v5);</span><br><span class="line">mesh.<span class="built_in">add_face</span>(v4, v5, v6, v7);</span><br><span class="line">mesh.<span class="built_in">add_face</span>(v0, v3, v7, v6);</span><br><span class="line">mesh.<span class="built_in">add_face</span>(v2, v4, v7, v3);</span><br></pre></td></tr></table></figure>
+<p>有个要注意的点是，Surface_mesh&lt;Kernel：：Point_3&gt;的add_face()函数，点的添加顺序不宜乱动，因为这里面每个面的顶点都是按顺时针&#x2F;逆时针排列的。乱改可能会因为合法性的问题无法正常生成面片，大概是因为里面的半边结构HalfEdge对面的合理性做了约束。<br>有关半边结构的详细理论可看下官网文档<sub>17</sub>，我当时的理解是，多边形网络是由很多条边构成的嘛，但这些边可能也就只存储了两个点的索引，为了能增加边与边、边与面之间的拓扑关系，CGAL设计了半边结构这种类型，它在边的基础上设置了两条有向线段，两条有向线段的指向方向互相相反，分别以边的两个点为起点&#x2F;终点，它们对应两个半边结构，称为对偶半边。<br>而在CGAL的多边形结构中，每个面由一个环形同向的半边链所定义，这些半边按顺序连接起来围成一个闭合环。当在已有闭合环的某一侧另外圈起一个新的“环”时（也就是在已有面的外缘构造新面），若点的顺序不对，就可能使新半边与其对偶半边的方向相同，这就会出现合法性问题，导致这个面无法被创建。<br><img src="03.png" alt="Halfedge半边结构" title="Halfedge半边结构"></p>
+<p>后面还有一部分代码，是对mesh_box这个对象附加属性，分别构建以面、边、点的索引为key值，平面对象为键值的属性，相当于将面、边、点与另外构建的平面做唯一绑定，这个另外构建的平面我称其为支撑平面，由于其相较mesh中的面片结构是没有边界的，能为后续的一些几何运算提供检索便利。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//添加多边形属性</span></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, <span class="type">const</span> Kernel::Plane_3*&gt; face_supporting_planes =</span><br><span class="line">	mesh.<span class="keyword">template</span> <span class="built_in">add_property_map</span>&lt;Polygon_mesh::Face_index, <span class="type">const</span> Kernel::Plane_3*&gt;(<span class="string">&quot;f:supp_plane&quot;</span>).first;<span class="comment">//每个面的支撑平面</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Edge_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; edge_supporting_planes</span><br><span class="line">	= mesh.<span class="keyword">template</span> add_property_map&lt;Polygon_mesh::Edge_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt;(<span class="string">&quot;e:supp_plane&quot;</span>).first;<span class="comment">//每个边的支撑平面</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; vertex_supporting_planes</span><br><span class="line">	= mesh.<span class="keyword">template</span> add_property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt;(<span class="string">&quot;v:supp_plane&quot;</span>).first;<span class="comment">//每个顶点的支撑平面</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//为网络中的每个面分配原始平面</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> fd : mesh.<span class="built_in">faces</span>())</span><br><span class="line">&#123;</span><br><span class="line">	Polygon_mesh::Halfedge_index h = mesh.<span class="built_in">halfedge</span>(fd);</span><br><span class="line">	Polygon_mesh::Vertex_index va = mesh.<span class="built_in">target</span>(h);        <span class="type">const</span> Kernel::Point_3&amp; pa = mesh.<span class="built_in">points</span>()[va]; h = mesh.<span class="built_in">next</span>(h);</span><br><span class="line">	Polygon_mesh::Vertex_index vb = mesh.<span class="built_in">target</span>(h);        <span class="type">const</span> Kernel::Point_3&amp; pb = mesh.<span class="built_in">points</span>()[vb]; h = mesh.<span class="built_in">next</span>(h);</span><br><span class="line">	Polygon_mesh::Vertex_index vc = mesh.<span class="built_in">target</span>(h);        <span class="type">const</span> Kernel::Point_3&amp; pc = mesh.<span class="built_in">points</span>()[vc];</span><br><span class="line">	<span class="type">const</span> Kernel::Plane_3* plane = <span class="keyword">new</span> Kernel::<span class="built_in">Plane_3</span>(pa, pb, pc);<span class="comment">//使用三个顶点的坐标构造一个平面</span></span><br><span class="line">	_supporting_planes.<span class="built_in">push_back</span>(plane);</span><br><span class="line">	face_supporting_planes[fd] = plane;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//为网络中的每个边分配原始平面</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> ed : mesh.<span class="built_in">edges</span>())</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//获取每个边的两个半边</span></span><br><span class="line">	Polygon_mesh::Halfedge_index h1 = mesh.<span class="built_in">halfedge</span>(ed);</span><br><span class="line">	Polygon_mesh::Halfedge_index h2 = mesh.<span class="built_in">opposite</span>(h1);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//获取半边各自所属的两个平面</span></span><br><span class="line">	Polygon_mesh::Face_index f1 = mesh.<span class="built_in">face</span>(h1);</span><br><span class="line">	Polygon_mesh::Face_index f2 = mesh.<span class="built_in">face</span>(h2);</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(f1 != Polygon_mesh::<span class="built_in">null_face</span>());<span class="comment">//bbox网格已关闭</span></span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(f2 != Polygon_mesh::<span class="built_in">null_face</span>());<span class="comment">//bbox网格已关闭</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//使用这两个原始平面构造新的平面，存入 edge_supporting_planes </span></span><br><span class="line">	<span class="type">const</span> Kernel::Plane_3* plane1 = face_supporting_planes[f1];</span><br><span class="line">	<span class="type">const</span> Kernel::Plane_3* plane2 = face_supporting_planes[f2];</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(plane1 &amp;&amp; plane2 &amp;&amp; plane1 != plane2);</span><br><span class="line"></span><br><span class="line">	edge_supporting_planes[ed].<span class="built_in">insert</span>(plane1);</span><br><span class="line">	edge_supporting_planes[ed].<span class="built_in">insert</span>(plane2);</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(edge_supporting_planes[ed].<span class="built_in">size</span>() == <span class="number">2</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//为网格中的每个顶点分配原始平面</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> vd : mesh.<span class="built_in">vertices</span>())</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(vertex_supporting_planes[vd].<span class="built_in">size</span>() == <span class="number">0</span>);</span><br><span class="line">	<span class="function">CGAL::Halfedge_around_target_circulator&lt;Polygon_mesh&gt; <span class="title">hbegin</span><span class="params">(vd, mesh)</span>, <span class="title">done</span><span class="params">(hbegin)</span></span>;</span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		Polygon_mesh::Halfedge_index h = *hbegin;<span class="comment">//获取每个顶点的所有半边</span></span><br><span class="line">		Polygon_mesh::Face_index f = mesh.<span class="built_in">face</span>(h);<span class="comment">//获取该半边所属的面</span></span><br><span class="line"></span><br><span class="line">		<span class="comment">//基于该原始平面构造新的平面，存入 vertex_supporting_planes</span></span><br><span class="line">		<span class="type">const</span> Kernel::Plane_3* plane = face_supporting_planes[f];</span><br><span class="line">		vertex_supporting_planes[vd].<span class="built_in">insert</span>(plane);</span><br><span class="line">		++hbegin;</span><br><span class="line">	&#125; <span class="keyword">while</span> (hbegin != done);</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(vertex_supporting_planes[vd].<span class="built_in">size</span>() == <span class="number">3</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">std::<span class="built_in">sort</span>(_supporting_planes.<span class="built_in">begin</span>(), _supporting_planes.<span class="built_in">end</span>());</span><br><span class="line"></span><br><span class="line"><span class="built_in">CGAL_assertion</span>(mesh.<span class="built_in">is_valid</span>());<span class="comment">//检查多边形网络，确保其是有效的</span></span><br></pre></td></tr></table></figure>
+
+
+<h2 id="构建候选表面多边形"><a href="#构建候选表面多边形" class="headerlink" title="构建候选表面多边形"></a>构建候选表面多边形</h2><p>有了包围盒多边形作为切割边界，开始基于聚类点云拟合出各个区域的平面。</p>
+<h3 id="属性声明"><a href="#属性声明" class="headerlink" title="属性声明"></a>属性声明</h3><p>多边形构建的实现函数HypothesisPlaneProcess::BuildMeshCandidate()，迎面撞过来的是一大堆typename别名，他们都是多边形上各个对象与其对应的支撑平面或所属区域的属性。这里可以很明显的看到，候选平面的属性别名用的是add_property_map()方法，而包围盒的属性别名用的都是property_map()方法，这是因为在之前的构造中已创建过包围盒相应的属性，当然改用add_property_map()应该也没问题。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//1、定义 mesh_bbox 、 mesh_candidate 的属性</span></span><br><span class="line"> Polygon_mesh::Property_map&lt;Polygon_mesh::Edge_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; bbox_edge_supporting_planes</span><br><span class="line">	= bbox_mesh.property_map&lt;Polygon_mesh::Edge_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt;(<span class="string">&quot;e:supp_plane&quot;</span>).first;<span class="comment">//每个边的所有支持平面</span></span><br><span class="line"></span><br><span class="line">Polygon_mesh::Property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; bbox_vertex_supporting_planes</span><br><span class="line">	= bbox_mesh.property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt;(<span class="string">&quot;v:supp_plane&quot;</span>).first;<span class="comment">//每个顶点的所有支持平面</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">mesh_candidate.<span class="built_in">clear</span>();<span class="comment">//清空 mesh_candidate 网格</span></span><br><span class="line">Polygon_mesh::Property_map&lt;Polygon_mesh::Face_index, <span class="type">const</span> Kernel::Plane_3*&gt; face_supporting_planes</span><br><span class="line">	= mesh_candidate.<span class="built_in">add_property_map</span>&lt;Polygon_mesh::Face_index, <span class="type">const</span> Kernel::Plane_3*&gt;(<span class="string">&quot;f:supp_plane&quot;</span>).first;<span class="comment">//每个面的支持平面</span></span><br><span class="line"></span><br><span class="line">Polygon_mesh::Property_map&lt;Polygon_mesh::Face_index, CGAL::internal::Planar_segment&lt;Kernel&gt;*&gt; face_supporting_segments</span><br><span class="line">	= mesh_candidate.add_property_map&lt;Polygon_mesh::Face_index, CGAL::internal::Planar_segment&lt;Kernel&gt;*&gt;(<span class="string">&quot;f:supp_segment&quot;</span>).first;<span class="comment">//每个面的支持平面片段</span></span><br><span class="line"></span><br><span class="line">Polygon_mesh::Property_map&lt;Polygon_mesh::Edge_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; edge_supporting_planes</span><br><span class="line">	= mesh_candidate.add_property_map&lt;Polygon_mesh::Edge_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt;(<span class="string">&quot;e:supp_plane&quot;</span>).first;<span class="comment">//每个边的所有支持平面</span></span><br><span class="line"></span><br><span class="line">Polygon_mesh::Property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; vertex_supporting_planes</span><br><span class="line">	= mesh_candidate.add_property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt;(<span class="string">&quot;v:supp_plane&quot;</span>).first;<span class="comment">//每个顶点的所有支持平面</span></span><br></pre></td></tr></table></figure>
+
+<p>这里我额外添加了一个新的属性f:region_map，用于确定面片所属的区域，给以后的面片简化用的，本质上与f:supp_segment近似。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//2023.11.23new:添加新的属性映射以表示平面所属的区域</span></span><br><span class="line">Polygon_mesh::Property_map&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt; face_region_map</span><br><span class="line">	= mesh_candidate.<span class="built_in">add_property_map</span>&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt;(<span class="string">&quot;f:region_map&quot;</span>).first;<span class="comment">//每个面的所属区域</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="计算相交点"><a href="#计算相交点" class="headerlink" title="计算相交点"></a>计算相交点</h3><p>接下来，遍历聚类点云的每个区域，将每个区域拟合为切面cutting_plane；</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">///外部嵌套了一层对区域的遍历</span></span><br><span class="line"><span class="comment">/// for (std::size_t i = 0; i &lt; _cloud_plane-&gt;planar_segments().size(); ++i)		</span></span><br><span class="line">		CGAL::internal::Planar_segment&lt;Kernel&gt;* g = _cloud_plane-&gt;<span class="built_in">planar_segments</span>()[i];</span><br><span class="line">		<span class="type">const</span> Kernel::Plane_3* cutting_plane = _cloud_plane-&gt;<span class="built_in">planar_segments</span>()[i]-&gt;<span class="built_in">supporting_plane</span>();</span><br><span class="line">		std::vector&lt;Kernel::Point_3&gt; intersecting_points;<span class="comment">//容器_交叉点</span></span><br><span class="line">		std::vector&lt; std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; intersecting_points_source_planes;<span class="comment">//容器_交叉点的源平面</span></span><br></pre></td></tr></table></figure>
+
+<p>对这里的每个面，计算其与包围盒的各个交点，也就是确定其边界。具体实现中是遍历包围盒的边，取边的两个端点构成线段，判断该直线与cutting_plane是否存在交点。这里源码有点乱，它分别作了三次交点判断：面与线段st、面分别与s、t两个端点。<br>我的理解是，它先判断两个端点是否位于切面的两侧，是则构造线段st，求st与cutting_plane的交点；否则，分别判断点s、t是否刚好在cutting_plane上，然后把相交的点存入intersecting_points，并将对应的包围盒支撑平面记录为交叉点的所属平面。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//2、对每个平面，遍历 mesh_bbox 的所有边，判断相交的点并存储</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> ed : bbox_mesh.<span class="built_in">edges</span>())</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//获取边的两个顶点</span></span><br><span class="line">	Polygon_mesh::Vertex_index sd = bbox_mesh.<span class="built_in">vertex</span>(ed, <span class="number">0</span>);</span><br><span class="line">	Polygon_mesh::Vertex_index td = bbox_mesh.<span class="built_in">vertex</span>(ed, <span class="number">1</span>);</span><br><span class="line">	<span class="type">const</span> Kernel::Point_3&amp; s = bbox_mesh.<span class="built_in">points</span>()[sd];</span><br><span class="line">	<span class="type">const</span> Kernel::Point_3&amp; t = bbox_mesh.<span class="built_in">points</span>()[td];</span><br><span class="line">	CGAL::Oriented_side ss = cutting_plane-&gt;<span class="built_in">oriented_side</span>(s);<span class="comment">//确定内外侧</span></span><br><span class="line">	CGAL::Oriented_side st = cutting_plane-&gt;<span class="built_in">oriented_side</span>(t);</span><br><span class="line">	<span class="comment">//判断平面 plane_cutting 是否与线段 st 相交</span></span><br><span class="line">	<span class="keyword">if</span> ((ss == CGAL::ON_POSITIVE_SIDE &amp;&amp; st == CGAL::ON_NEGATIVE_SIDE)</span><br><span class="line">		|| (ss == CGAL::ON_NEGATIVE_SIDE &amp;&amp; st == CGAL::ON_POSITIVE_SIDE))</span><br><span class="line">	&#123;</span><br><span class="line">		CGAL::Object obj = CGAL::<span class="built_in">intersection</span>(*cutting_plane, Kernel::<span class="built_in">Line_3</span>(s, t));<span class="comment">//获取相交点</span></span><br><span class="line">		<span class="keyword">if</span> (<span class="type">const</span> Kernel::Point_3* p = CGAL::<span class="built_in">object_cast</span>&lt;Kernel::Point_3&gt;(&amp;obj))</span><br><span class="line">		&#123;</span><br><span class="line">			intersecting_points.<span class="built_in">push_back</span>(*p);<span class="comment">//相交点添加至 intersecting_points</span></span><br><span class="line">			std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; planes = bbox_edge_supporting_planes[ed];<span class="comment">//获取与该相交点相关的所有支持平面</span></span><br><span class="line">			<span class="comment">//平面添加至 planes 、 intersecting_points_source_planes</span></span><br><span class="line">			planes.<span class="built_in">insert</span>(cutting_plane);</span><br><span class="line">			<span class="built_in">CGAL_assertion</span>(planes.<span class="built_in">size</span>() == <span class="number">3</span>);</span><br><span class="line">			intersecting_points_source_planes.<span class="built_in">push_back</span>(planes);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">			std::cerr &lt;&lt; <span class="string">&quot;错误：平面 plane_cutting 与线段 st 不存在交集&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//plane_cutting 与线段 s-t 不相交</span></span><br><span class="line">		<span class="comment">//判断 plane_cutting 是否与其中一个顶点相交</span></span><br><span class="line">		<span class="keyword">if</span> (ss == CGAL::ON_ORIENTED_BOUNDARY &amp;&amp; st != CGAL::ON_ORIENTED_BOUNDARY)</span><br><span class="line">		&#123;</span><br><span class="line">			intersecting_points.<span class="built_in">push_back</span>(s);</span><br><span class="line">			<span class="type">const</span> std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt;&amp; planes = bbox_vertex_supporting_planes[sd];</span><br><span class="line">			<span class="built_in">CGAL_assertion</span>(planes.<span class="built_in">size</span>() == <span class="number">3</span>);</span><br><span class="line">			intersecting_points_source_planes.<span class="built_in">push_back</span>(planes);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (st == CGAL::ON_ORIENTED_BOUNDARY &amp;&amp; ss != CGAL::ON_ORIENTED_BOUNDARY)</span><br><span class="line">		&#123;</span><br><span class="line">			intersecting_points.<span class="built_in">push_back</span>(t);</span><br><span class="line">			<span class="type">const</span> std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt;&amp; planes = bbox_vertex_supporting_planes[td];</span><br><span class="line">			<span class="built_in">CGAL_assertion</span>(planes.<span class="built_in">size</span>() == <span class="number">3</span>);</span><br><span class="line">			intersecting_points_source_planes.<span class="built_in">push_back</span>(planes);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="筛选凸包点"><a href="#筛选凸包点" class="headerlink" title="筛选凸包点"></a>筛选凸包点</h3><p>得到切面与点云包围盒的交点后，根据交点坐标构造凸包结构，也就是在切面cutting_plane上确定这些点的连接顺序，以他们为边界生成一块面片。<br>代码里先做了个合理性判断，size大于3是指面片至少得有3个顶点来构成三角面；然后将这些交点投影至cutting_plane所在的二维坐标系上，调用CGAL库中的convex_hull方法来构成二维凸包；最后，记录凸包点和对应的面片至point_convexHull和ch_source_planes中。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//3、确定 intersecting_points 中的凸包点</span></span><br><span class="line"><span class="keyword">if</span> (intersecting_points.<span class="built_in">size</span>() &gt;= <span class="number">3</span>)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//将 intersecting_points 的所有点转为二维坐标，存入 pts</span></span><br><span class="line">	std::list&lt;Kernel::Point_3&gt; pts;</span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; intersecting_points.<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">const</span> Kernel::Point_3&amp; p = intersecting_points[i];</span><br><span class="line">		<span class="type">const</span> Kernel::Point_2&amp; q = cutting_plane-&gt;<span class="built_in">to_2d</span>(p);<span class="comment">//返回仿射变换下的投影的图像点，该投影映射到 XY 平面上，并删除 z 坐标</span></span><br><span class="line">		pts.<span class="built_in">push_back</span>(Kernel::<span class="built_in">Point_3</span>(q.<span class="built_in">x</span>(), q.<span class="built_in">y</span>(), <span class="built_in">FT</span>(i))); <span class="comment">// z 分量存储点索引</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//计算 pts 的凸包点集，存入 hull</span></span><br><span class="line">	std::list&lt;Kernel::Point_3&gt; hull;</span><br><span class="line">	CGAL::<span class="built_in">convex_hull_2</span>(pts.<span class="built_in">begin</span>(), pts.<span class="built_in">end</span>(), std::<span class="built_in">back_inserter</span>(hull), CGAL::<span class="built_in">Projection_traits_xy_3</span>&lt;Kernel&gt;());</span><br><span class="line">	<span class="comment">//将所有凸包点从 intersecting_points 中存入 point_convexHull 和 ch_source_planes </span></span><br><span class="line">	std::vector&lt;Kernel::Point_3&gt; point_convexHull;<span class="comment">//容器_凸包点</span></span><br><span class="line">	std::vector&lt; std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; ch_source_planes;<span class="comment">//容器_凸包平面</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">typename</span> std::list&lt;Kernel::Point_3&gt;::iterator it = hull.<span class="built_in">begin</span>(); it != hull.<span class="built_in">end</span>(); ++it)</span><br><span class="line">	&#123;</span><br><span class="line">		std::<span class="type">size_t</span> idx = std::<span class="built_in">size_t</span>(it-&gt;<span class="built_in">z</span>());</span><br><span class="line">		point_convexHull.<span class="built_in">push_back</span>(intersecting_points[idx]);</span><br><span class="line">		ch_source_planes.<span class="built_in">push_back</span>(intersecting_points_source_planes[idx]);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//4、 mesh_candidate 网络创建新面</span></span><br><span class="line">	<span class="comment">//......</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="构造（含边界的）新面"><a href="#构造（含边界的）新面" class="headerlink" title="构造（含边界的）新面"></a>构造（含边界的）新面</h3><p>确定出切面边界（凸包）的点坐标后，按顺序连接来构建面片。转存这些点的下标到descriptors后，使用add_face()函数在候选平面集对象mesh_candidate内构造新的面。add_face()的调用示例可参考<sub>18</sub>，它属于CGAL中的Euler运算<sub>19</sub>，能在维护原有半边结构的情况下创建多边形网络的新边、面。（注：建议瞅一瞅，里面有些概念图能加深对半边、环、面的理解）<br>再后面，是对mesh_candidate中刚刚新加入的边赋予支撑面属性。这里作者使用一种围绕面的半边环绕迭代器Halfedge_around_face_circulator来为边ed赋予支撑面属性，即指定这个面片的边是来自哪个切面&#x2F;拟合的平面系数上。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//4、 mesh_candidate 网络创建新面</span></span><br><span class="line"><span class="keyword">if</span> (point_convexHull.<span class="built_in">size</span>() &gt;= <span class="number">3</span>)</span><br><span class="line">&#123;</span><br><span class="line">	std::vector&lt;Polygon_mesh::Vertex_index&gt; descriptors;</span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> j = <span class="number">0</span>; j &lt; point_convexHull.<span class="built_in">size</span>(); ++j)</span><br><span class="line">	&#123;</span><br><span class="line">		Polygon_mesh::Vertex_index vd = mesh_candidate.<span class="built_in">add_vertex</span>(point_convexHull[j]);</span><br><span class="line">		descriptors.<span class="built_in">push_back</span>(vd);</span><br><span class="line">		vertex_supporting_planes[vd] = ch_source_planes[j];</span><br><span class="line">		<span class="built_in">CGAL_assertion</span>(vertex_supporting_planes[vd].<span class="built_in">size</span>() == <span class="number">3</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//将该面上的所有顶点的 supporting_planes 属性设置为 ch_source_planes</span></span><br><span class="line">	Polygon_mesh::Face_index fd = mesh_candidate.<span class="built_in">add_face</span>(descriptors);</span><br><span class="line">	face_supporting_segments[fd] = _cloud_plane-&gt;<span class="built_in">planar_segments</span>()[i];</span><br><span class="line">	face_supporting_planes[fd] = cutting_plane;</span><br><span class="line">	<span class="comment">//new:为该面添加对应的点云区域下标</span></span><br><span class="line">	face_region_map[fd] = i;</span><br><span class="line">	<span class="comment">//std::cout &lt;&lt; &quot;i: &quot; &lt;&lt; i &lt;&lt; &quot;  region_map_i: &quot; &lt;&lt; _cloud_plane-&gt;property_map&lt;int&gt;(&quot;region_map&quot;).second[&amp;i] &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="comment">//为该面的每个边缘设置 supporting_planes 属性</span></span><br><span class="line">	<span class="function">CGAL::Halfedge_around_face_circulator&lt;Polygon_mesh&gt; <span class="title">hbegin</span><span class="params">(mesh_candidate.halfedge(fd), mesh_candidate)</span>, <span class="title">done</span><span class="params">(hbegin)</span></span>;</span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		Polygon_mesh::Halfedge_index hd = *hbegin;</span><br><span class="line">		Polygon_mesh::Edge_index ed = mesh_candidate.<span class="built_in">edge</span>(hd);</span><br><span class="line">		Polygon_mesh::Vertex_index s_vd = mesh_candidate.<span class="built_in">source</span>(hd);</span><br><span class="line">		Polygon_mesh::Vertex_index t_vd = mesh_candidate.<span class="built_in">target</span>(hd);</span><br><span class="line">		<span class="type">const</span> std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt;&amp; s_planes = vertex_supporting_planes[s_vd];</span><br><span class="line">		<span class="type">const</span> std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt;&amp; t_planes = vertex_supporting_planes[t_vd];</span><br><span class="line">		std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; common_planes;</span><br><span class="line">		std::<span class="built_in">set_intersection</span>(s_planes.<span class="built_in">begin</span>(), s_planes.<span class="built_in">end</span>(), t_planes.<span class="built_in">begin</span>(), t_planes.<span class="built_in">end</span>(), std::<span class="built_in">inserter</span>(common_planes, common_planes.<span class="built_in">begin</span>()));</span><br><span class="line">		<span class="keyword">if</span> (common_planes.<span class="built_in">size</span>() == <span class="number">2</span>)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="comment">//如果两个顶点的 supporting_planes 属性都包含两个平面，则将这两个平面设置为该边缘的 supporting_planes 属性</span></span><br><span class="line">			<span class="built_in">CGAL_assertion</span>(edge_supporting_planes[ed].<span class="built_in">size</span>() == <span class="number">0</span>);</span><br><span class="line">			edge_supporting_planes[ed] = common_planes;</span><br><span class="line">			<span class="built_in">CGAL_assertion</span>(edge_supporting_planes[ed].<span class="built_in">size</span>() == <span class="number">2</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span><span class="comment">//如果两个顶点的 supporting_planes 属性不都包含两个平面，则说明发生了拓扑错误</span></span><br><span class="line">			std::cerr &lt;&lt; <span class="string">&quot;topological error 拓扑错误&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">		++hbegin;</span><br><span class="line">	&#125; <span class="keyword">while</span> (hbegin != done);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>循环每个点云区域并按上述方法构建面片，mesh_candidate内就有若干个跨幅大小为包围盒范围的大块面片。把实际建筑的各个特征区域在脑海里拉长延伸为平面，那此时mesh_candidate中的面片即为这种情况的可视化。<br>后续的平面相交细分、面片置信度计算以及最优组合求解等步骤，其实都是对这一步生成的面片做细化、剪枝处理。到目前为止已经挺长的了这篇文章，中场休息一下，这些内容就放后面章节再做这里啦。<br><img src="04.png" alt="区域特征面片" title="区域特征面片"></p>
+<h2 id="参考文献-引用"><a href="#参考文献-引用" class="headerlink" title="参考文献&amp;引用"></a>参考文献&amp;引用</h2><p><span>[1] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/">https://3d.bk.tudelft.nl/liangliang/</a></span><br><span>[2] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html">https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html</a></span><br><span>[3] <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=_0brfDFkIkc">https://www.youtube.com/watch?v=_0brfDFkIkc</a></span><br><span>[4] Linfu X ,Han H ,Qing Z , et al. Combined Rule-Based and Hypothesis-Based Method for Building Model Reconstruction from Photogrammetric Point Clouds [J]. Remote Sensing, 2021, 13 (6): 1107-1107.</span><br><span> [5] Nan L , Wonka P .PolyFit: Polygonal Surface Reconstruction from Point Clouds[C]&#x2F;&#x2F;International Conference on Computer Vision.IEEE, 2017.</span><br>[6]<a target="_blank" rel="noopener" href="https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip">https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip</a><br>[7]<a target="_blank" rel="noopener" href="https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z">https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z</a><br>[8]<a target="_blank" rel="noopener" href="https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip">https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip</a><br>[9]<a target="_blank" rel="noopener" href="https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip">https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip</a><br>[10]<a target="_blank" rel="noopener" href="https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe">https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe</a><br>[11]<a target="_blank" rel="noopener" href="https://zenodo.org/records/4390295#.Y0eIodJBxuV">https://zenodo.org/records/4390295#.Y0eIodJBxuV</a><br>[12]<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/277599635/answer/2149719454">https://www.zhihu.com/question/277599635/answer/2149719454</a><br>[13]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br>[14]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction">https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction</a><br>[15]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/90858099">https://zhuanlan.zhihu.com/p/90858099</a><br>[16]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br><font color=#CD5C5C>[17]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/HalfedgeDS/index.html">https://doc.cgal.org/latest/HalfedgeDS/index.html</a><br>[18]<a target="_blank" rel="noopener" href="https://segmentfault.com/q/1010000043819426">https://segmentfault.com/q/1010000043819426</a><br>[19]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd">https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd</a><br></font></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Sleeping-Ahead
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2024/12/23/PolyFit05/" title="点云三维重建 PolyFit算法解析与改进（五）">http://example.com/2024/12/23/PolyFit05/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
+              <a href="/tags/%E7%82%B9%E4%BA%91%E5%A4%84%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> 点云处理</a>
+              <a href="/tags/%E9%9D%A2%E7%89%87%E7%BB%93%E6%9E%84%E5%A4%84%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> 面片结构处理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/11/20/PolyFit04/" rel="prev" title="点云三维重建 PolyFit算法解析与改进（四）">
+      <i class="fa fa-chevron-left"></i> 点云三维重建 PolyFit算法解析与改进（四）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/01/11/SFM01/" rel="next" title="运动结构恢复（一） SFM理论记录">
+      运动结构恢复（一） SFM理论记录 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E5%81%87%E8%AE%BE-%E5%80%99%E9%80%89-%E5%B9%B3%E9%9D%A2%E7%9A%84%E6%95%B4%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">构建假设(候选)平面的整体流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%81%9A%E7%B1%BB%E7%82%B9%E4%BA%91%E7%9A%84%E5%8C%BA%E5%9F%9F%E4%BC%98%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">聚类点云的区域优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">主流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82-%E7%BB%9F%E8%AE%A1%E5%85%B1%E9%9D%A2%E7%9A%84%E7%82%B9%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">实现细节_统计共面的点数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82-%E8%81%9A%E7%B1%BB%E5%90%88%E5%B9%B6"><span class="nav-number">2.3.</span> <span class="nav-text">实现细节_聚类合并</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%9D%E8%B7%AF%E5%A4%8D%E8%BF%B0"><span class="nav-number">2.4.</span> <span class="nav-text">思路复述</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%E5%8C%85%E5%9B%B4%E7%9B%92"><span class="nav-number">3.</span> <span class="nav-text">构造包围盒</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E5%80%99%E9%80%89%E8%A1%A8%E9%9D%A2%E5%A4%9A%E8%BE%B9%E5%BD%A2"><span class="nav-number">4.</span> <span class="nav-text">构建候选表面多边形</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E5%A3%B0%E6%98%8E"><span class="nav-number">4.1.</span> <span class="nav-text">属性声明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97%E7%9B%B8%E4%BA%A4%E7%82%B9"><span class="nav-number">4.2.</span> <span class="nav-text">计算相交点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AD%9B%E9%80%89%E5%87%B8%E5%8C%85%E7%82%B9"><span class="nav-number">4.3.</span> <span class="nav-text">筛选凸包点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E9%80%A0%EF%BC%88%E5%90%AB%E8%BE%B9%E7%95%8C%E7%9A%84%EF%BC%89%E6%96%B0%E9%9D%A2"><span class="nav-number">4.4.</span> <span class="nav-text">构造（含边界的）新面</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE-%E5%BC%95%E7%94%A8"><span class="nav-number">6.</span> <span class="nav-text">参考文献&amp;引用</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sleeping-Ahead"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Sleeping-Ahead</p>
+  <div class="site-description" itemprop="description">主要用途是技术/算法的记录博客哒！<br>偶尔摘抄点杂七杂八的随想~~<br>嘻嘻ԅ(¯﹃¯ԅ)</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Sleeping-ahead" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Sleeping-ahead" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://space.bilibili.com/179235151" title="bilibili → https:&#x2F;&#x2F;space.bilibili.com&#x2F;179235151" rel="noopener" target="_blank"><i class="iconfont icon-bilibili fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sleeping-Ahead</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">49k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">1:28</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("03/01/2023 10:00:00"); //此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒.";
+    }
+setInterval("createtime()",250);
+</script>
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
