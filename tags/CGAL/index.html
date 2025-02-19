@@ -22,34 +22,18 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="摘要：多视图几何；本质矩阵E、基础矩阵F;矩阵RT分解。">
-<meta property="og:type" content="article">
-<meta property="og:title" content="运动结构恢复（一） SFM理论记录">
-<meta property="og:url" content="http://example.com/2025/01/11/SFM01/index.html">
+  <meta name="description" content="主要用途是技术&#x2F;算法的记录博客哒！偶尔摘抄点杂七杂八的随想~~嘻嘻ԅ(¯﹃¯ԅ)">
+<meta property="og:type" content="website">
+<meta property="og:title" content="前排瞌睡杂物堆">
+<meta property="og:url" content="http://example.com/tags/CGAL/index.html">
 <meta property="og:site_name" content="前排瞌睡杂物堆">
-<meta property="og:description" content="摘要：多视图几何；本质矩阵E、基础矩阵F;矩阵RT分解。">
+<meta property="og:description" content="主要用途是技术&#x2F;算法的记录博客哒！偶尔摘抄点杂七杂八的随想~~嘻嘻ԅ(¯﹃¯ԅ)">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%B9%B3%E8%A1%8C%E8%A7%86%E5%9B%BE%E7%9A%84%E4%B8%89%E8%A7%92%E6%B5%8B%E9%87%8F.png">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%9B%BE%E5%83%8F%E6%A0%A1%E6%AD%A3.png">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%83%8F%E7%B4%A0%E7%82%B9%E4%B9%8B%E9%97%B4%E7%9A%84%E6%9E%81%E5%87%A0%E4%BD%95%E5%85%B3%E7%B3%BB.png">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E8%BF%90%E5%8A%A8%E7%BB%93%E6%9E%84%E6%81%A2%E5%A4%8D%E9%97%AE%E9%A2%98.png">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E6%97%A0RT%E6%97%A0%E6%B3%95%E7%9B%B4%E6%8E%A5%E4%B8%89%E8%A7%92%E5%8C%96.jpg">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E6%AC%A7%E5%BC%8F%E7%BB%93%E6%9E%84%E6%B1%82RT%E8%BF%87%E7%A8%8B.jpg">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%9F%BA%E7%A1%80%E7%9F%A9%E9%98%B5F%E5%BF%BD%E7%95%A5%E6%AD%A3%E8%B4%9F%E5%92%8C%E5%B0%BA%E5%BA%A6%E5%9B%A0%E7%B4%A0.jpg">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E6%9C%AC%E8%B4%A8%E7%9F%A9%E9%98%B5%E7%9A%84RT%E5%88%86%E8%A7%A3.jpg">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%88%86%E8%A7%A3%E5%90%8E4%E7%A7%8DRT%E6%89%BE%E6%AD%A3%E7%A1%AE%E8%A7%A3.png">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%88%A9%E7%94%A8F%E4%BC%B0%E8%AE%A1%E6%91%84%E5%83%8F%E6%9C%BA%E7%9F%A9%E9%98%B501.png">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%88%A9%E7%94%A8F%E4%BC%B0%E8%AE%A1%E6%91%84%E5%83%8F%E6%9C%BA%E7%9F%A9%E9%98%B502.png">
-<meta property="og:image" content="http://example.com/2025/01/11/SFM01/%E5%88%A9%E7%94%A8F%E4%BC%B0%E8%AE%A1%E6%91%84%E5%83%8F%E6%9C%BA%E7%9F%A9%E9%98%B503.png">
-<meta property="article:published_time" content="2025-01-11T08:06:20.000Z">
-<meta property="article:modified_time" content="2025-01-21T13:55:29.971Z">
 <meta property="article:author" content="Sleeping-Ahead">
-<meta property="article:tag" content="多视图几何">
-<meta property="article:tag" content="矩阵运算">
+<meta property="article:tag" content="Cpp,点云,鱼眼图像,算法">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/2025/01/11/SFM01/%E5%B9%B3%E8%A1%8C%E8%A7%86%E5%9B%BE%E7%9A%84%E4%B8%89%E8%A7%92%E6%B5%8B%E9%87%8F.png">
 
-<link rel="canonical" href="http://example.com/2025/01/11/SFM01/">
+<link rel="canonical" href="http://example.com/tags/CGAL/">
 
 
 <script id="page-configurations">
@@ -57,12 +41,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : true,
+    isPost : false,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>运动结构恢复（一） SFM理论记录 | 前排瞌睡杂物堆</title>
+  <title>标签: CGAL | 前排瞌睡杂物堆</title>
   
 
 
@@ -171,148 +155,114 @@
         <div class="content-wrap">
           
 
-          <div class="content post posts-expand">
+          <div class="content tag">
             
 
-    
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2025/01/11/SFM01/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.png">
-      <meta itemprop="name" content="Sleeping-Ahead">
-      <meta itemprop="description" content="主要用途是技术/算法的记录博客哒！<br>偶尔摘抄点杂七杂八的随想~~<br>嘻嘻ԅ(¯﹃¯ԅ)">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="前排瞌睡杂物堆">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          运动结构恢复（一） SFM理论记录
-        </h1>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2025-01-11 16:06:20" itemprop="dateCreated datePublished" datetime="2025-01-11T16:06:20+08:00">2025-01-11</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2025-01-21 21:55:29" itemprop="dateModified" datetime="2025-01-21T21:55:29+08:00">2025-01-21</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%BF%90%E5%8A%A8%E7%8A%B6%E6%80%81%E4%BC%B0%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">运动状态估计</span></a>
-                </span>
-            </span>
-
-          
-            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span id="busuanzi_value_page_pv"></span>
-            </span><br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>499</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
+  
+  <div class="post-block">
+    <div class="posts-collapse">
+      <div class="collection-title">
+        <h2 class="collection-header">CGAL
+          <small>标签</small>
+        </h2>
+      </div>
 
       
-        <p>摘要：<br>多视图几何；本质矩阵E、基础矩阵F;矩阵RT分解。</p>
-<span id="more"></span>
-
-<h2 id="粗略记录"><a href="#粗略记录" class="headerlink" title="粗略记录"></a>粗略记录</h2><p>B站大学链接：<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1gR4y147Tt/">https://www.bilibili.com/video/BV1gR4y147Tt/</a></p>
-<p>极几何关系作用：简化三维点的深度计算，不需要再依赖三维空间的光心间旋转R和平移T来确定。<br>B:相机光心距离&#x2F;基线距离。<br>f:相机焦距。<br>pu-pu’:视差距离。<br><img src="平行视图的三角测量.png" alt="像素点之间的极几何关系" title="像素点之间的极几何关系"><br><img src="图像校正.png" alt="平行视图的三角测量" title="平行视图的三角测量"></p>
-<p>通过图像校正过程获得两幅图的平行视图。<br>两个重点步骤：<br>1、极点投影到无穷远处；<br>2、最小化4的公式。<br><img src="像素点之间的极几何关系.png" alt="像素点之间的极几何关系" title="像素点之间的极几何关系"></p>
-<p>三种经典的运动恢复结构任务：<br>1、欧式结构：摄像机内参数已知，外参数未知<br>2、仿射结构：摄像机为仿射相机，内外参未知<br>3、透视结构：摄像机为透视相机，内外参未知</p>
-<p>运动结构恢复目标：通过三维场景的多张图像，恢复出场景的三维结构信息以及每张图片对应的摄像机参数。<br><img src="运动结构恢复问题.png" alt="运动结构恢复问题" title="运动结构恢复问题"></p>
-<p>无法先验知道相片之间的旋转和平移，不能直接使用传统的三角化方法求同名点的三维坐标。<br><img src="无RT无法直接三角化.jpg" alt="无RT无法直接三角化" title="无RT无法直接三角化"><br>欧式结构通过以下4步求解出RT。<br><img src="欧式结构求RT过程.jpg" alt="欧式结构求RT过程" title="欧式结构求RT过程"></p>
-<p>矩阵分解中，基础矩阵F忽略正负和尺度因素。<br><img src="基础矩阵F忽略正负和尺度因素.jpg" alt="基础矩阵F忽略正负和尺度因素" title="基础矩阵F忽略正负和尺度因素"><br>本质矩阵的RT分解:<br><img src="本质矩阵的RT分解.jpg" alt="本质矩阵的RT分解" title="本质矩阵的RT分解"><br><img src="分解后4种RT找正确解.png" alt="分解后4种RT找正确解" title="分解后4种RT找正确解"><br><img src="利用F估计摄像机矩阵01.png" alt="利用F估计摄像机矩阵01" title="利用F估计摄像机矩阵01"><br><img src="利用F估计摄像机矩阵02.png" alt="利用F估计摄像机矩阵02" title="利用F估计摄像机矩阵02"><br><img src="利用F估计摄像机矩阵03.png" alt="利用F估计摄像机矩阵03" title="利用F估计摄像机矩阵03"></p>
-<p>粗略速览了一遍多视图几何和后面的SFM系统，给出了相关思路和公式，后续有空了再整理下。<br>&#x2F;&#x2F;TODO:理论再整理，留个坑在这先。</p>
-
+    <div class="collection-year">
+      <span class="collection-header">2025</span>
     </div>
 
-    
-    
-    
-        
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
 
-<div>
-<ul class="post-copyright">
-  <li class="post-copyright-author">
-    <strong>本文作者： </strong>Sleeping-Ahead
-  </li>
-  <li class="post-copyright-link">
-    <strong>本文链接：</strong>
-    <a href="http://example.com/2025/01/11/SFM01/" title="运动结构恢复（一） SFM理论记录">http://example.com/2025/01/11/SFM01/</a>
-  </li>
-  <li class="post-copyright-license">
-    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
-  </li>
-</ul>
-</div>
+      <div class="post-meta">
+        <time itemprop="dateCreated"
+              datetime="2025-01-21T22:25:48+08:00"
+              content="2025-01-21">
+          01-21
+        </time>
+      </div>
 
+      <div class="post-title">
+          <a class="post-title-link" href="/2025/01/21/PolyFit06/" itemprop="url">
+            <span itemprop="name">PolyFit06</span>
+          </a>
+      </div>
 
-      <footer class="post-footer">
-          
-          <div class="post-tags">
-              <a href="/tags/%E5%A4%9A%E8%A7%86%E5%9B%BE%E5%87%A0%E4%BD%95/" rel="tag"><i class="fa fa-tag"></i> 多视图几何</a>
-              <a href="/tags/%E7%9F%A9%E9%98%B5%E8%BF%90%E7%AE%97/" rel="tag"><i class="fa fa-tag"></i> 矩阵运算</a>
-          </div>
-
-        
-
-
-        
-    <div class="post-nav">
-      <div class="post-nav-item">
-    <a href="/2024/12/23/PolyFit05/" rel="prev" title="点云三维重建 PolyFit算法解析与改进（五）">
-      <i class="fa fa-chevron-left"></i> 点云三维重建 PolyFit算法解析与改进（五）
-    </a></div>
-      <div class="post-nav-item">
-    <a href="/2025/01/21/PolyFit06/" rel="next" title="PolyFit06">
-      PolyFit06 <i class="fa fa-chevron-right"></i>
-    </a></div>
-    </div>
-      </footer>
-    
+    </header>
   </article>
+    <div class="collection-year">
+      <span class="collection-header">2024</span>
+    </div>
+
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      <div class="post-meta">
+        <time itemprop="dateCreated"
+              datetime="2024-12-23T21:18:02+08:00"
+              content="2024-12-23">
+          12-23
+        </time>
+      </div>
+
+      <div class="post-title">
+          <a class="post-title-link" href="/2024/12/23/PolyFit05/" itemprop="url">
+            <span itemprop="name">点云三维重建 PolyFit算法解析与改进（五）</span>
+          </a>
+      </div>
+
+    </header>
+  </article>
+
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      <div class="post-meta">
+        <time itemprop="dateCreated"
+              datetime="2024-11-20T23:50:22+08:00"
+              content="2024-11-20">
+          11-20
+        </time>
+      </div>
+
+      <div class="post-title">
+          <a class="post-title-link" href="/2024/11/20/PolyFit04/" itemprop="url">
+            <span itemprop="name">点云三维重建 PolyFit算法解析与改进（四）</span>
+          </a>
+      </div>
+
+    </header>
+  </article>
+
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      <div class="post-meta">
+        <time itemprop="dateCreated"
+              datetime="2024-11-19T22:31:20+08:00"
+              content="2024-11-19">
+          11-19
+        </time>
+      </div>
+
+      <div class="post-title">
+          <a class="post-title-link" href="/2024/11/19/PolyFit03/" itemprop="url">
+            <span itemprop="name">点云三维重建 PolyFit算法解析与改进（三）</span>
+          </a>
+      </div>
+
+    </header>
+  </article>
+
+    </div>
+  </div>
   
   
+  
+
   
 
 
@@ -365,7 +315,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B2%97%E7%95%A5%E8%AE%B0%E5%BD%95"><span class="nav-number">1.</span> <span class="nav-text">粗略记录</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
