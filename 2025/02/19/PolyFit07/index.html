@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="摘要：线性整数规划；提取邻接关系；能量项设置及累计；构建方程约束；重建模型。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="点云三维重建 PolyFit算法解析与改进（七）">
+<meta property="og:url" content="http://example.com/2025/02/19/PolyFit07/index.html">
+<meta property="og:site_name" content="前排瞌睡杂物堆">
+<meta property="og:description" content="摘要：线性整数规划；提取邻接关系；能量项设置及累计；构建方程约束；重建模型。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2025/02/19/PolyFit07/%E4%B8%89%E8%A7%92%E9%94%A5.gif">
+<meta property="og:image" content="http://example.com/2025/02/19/PolyFit07/%E7%A1%AC%E7%BA%A6%E6%9D%9F%E4%B8%8E%E8%83%BD%E9%87%8F%E6%96%B9%E7%A8%8B.png">
+<meta property="og:image" content="http://example.com/2025/02/19/PolyFit07/%E8%83%BD%E9%87%8F%E5%87%BD%E6%95%B0%E9%A1%B9.png">
+<meta property="og:image" content="http://example.com/2025/02/19/PolyFit07/%E5%80%99%E9%80%89%E9%9D%A2%E6%8B%93%E6%89%91%E5%85%B3%E7%B3%BB.png">
+<meta property="og:image" content="http://example.com/2025/02/19/PolyFit07/%E9%97%AD%E5%90%88%E7%A1%AC%E7%BA%A6%E6%9D%9F.png">
+<meta property="og:image" content="http://example.com/2025/02/19/PolyFit07/%E5%80%99%E9%80%89%E9%9D%A2%E9%9B%862%E9%97%AD%E5%90%88%E6%A8%A1%E5%9E%8B.png">
+<meta property="article:published_time" content="2025-02-19T14:28:22.000Z">
+<meta property="article:modified_time" content="2025-03-25T14:32:36.162Z">
+<meta property="article:author" content="Sleeping-Ahead">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="CGAL">
+<meta property="article:tag" content="PolyFit">
+<meta property="article:tag" content="最小二乘线性规划">
+<meta property="article:tag" content="能量函数">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2025/02/19/PolyFit07/%E4%B8%89%E8%A7%92%E9%94%A5.gif">
+
+<link rel="canonical" href="http://example.com/2025/02/19/PolyFit07/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>点云三维重建 PolyFit算法解析与改进（七） | 前排瞌睡杂物堆</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">前排瞌睡杂物堆</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">LKH 求存，探路，躬行，旁通，振兴，延续。<br>第二阶段，启动！</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2025/02/19/PolyFit07/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Sleeping-Ahead">
+      <meta itemprop="description" content="主要用途是技术/算法的记录博客哒！<br>偶尔摘抄点杂七杂八的随想~~<br>嘻嘻ԅ(¯﹃¯ԅ)">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="前排瞌睡杂物堆">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          点云三维重建 PolyFit算法解析与改进（七）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-02-19 22:28:22" itemprop="dateCreated datePublished" datetime="2025-02-19T22:28:22+08:00">2025-02-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-03-25 22:32:36" itemprop="dateModified" datetime="2025-03-25T22:32:36+08:00">2025-03-25</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%82%B9%E4%BA%91%E4%B8%89%E7%BB%B4%E9%87%8D%E5%BB%BA/" itemprop="url" rel="index"><span itemprop="name">点云三维重建</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>23k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>42 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>摘要：<br>线性整数规划；提取邻接关系；能量项设置及累计；构建方程约束；重建模型。</p>
+<span id="more"></span>
+
+<p>历经点云聚类、多边形网络重建等处理，手中这花花绿绿的候选面片数据还剩一个主要的处理步骤：线性整数规划。以我从运筹学&#x2F;最优化理论那粗浅借来的理解，这个过程将在某些硬约束条件下，以最小化能量函数中能量项的加权和为目标，通过求解器的解算来得出无边界、闭合流型的三维模型。</p>
+<h2 id="线性规划之胡言乱语"><a href="#线性规划之胡言乱语" class="headerlink" title="线性规划之胡言乱语"></a>线性规划之胡言乱语</h2><p>还是更具体地拆解下这个过程中的思路吧。为描述面片选取过程，以集合中的面要素和边要素为变量，构建二元的混合整数线性规划问题，感觉就是把多边形网络中的面和线想象成方程中的变量x、y，设置多个包含不同x和y的方程构成方程组？线性规划就像是求解出其中最想要的（多个）x和y值。<br><img src="三角锥.gif" alt="三角锥" title="三角锥"><br>怎么形容呢，以上面的一个三角锥几何体为例，这是很久之前我测试ply文件读写功能时绘制的，它由4个面和6条边（&#x2F;12条半边）构成，相当于这个几何体包含了4个x、6个y。这些变量是已知的全部条件，把它们全部丢给求解器后，为了让它返回一个完整闭合的几何体而不是分散的面&#x2F;线，就需要设置称为“条件约束”的额外要求。一个较容易理解的约束是要求每条线y必须与两个面x相连，即连续闭合的几何体中每个面都是两两相接的。在当前的这个三角锥中很容易能靠这个约束得到唯一解，毕竟唯一符合该要求的x、y组合只有一种情况。倘若把这个几何体沿中间腰部横切一刀，得到一个小三角锥和梯形体，满足这个约束条件的就有两组解，这时候就要引入“能量函数”或者应该说是“目标函数”的概念，它应该是通过给每个x&#x2F;y赋予不同的属性值，比方说我期望得到的几何体还是三棱锥，那在求解前我会对所有面x做一次三角面&#x2F;四角面检测，给“三角面”赋一个较高的属性值，“四角面”赋一个较低的属性值，当解算器筛选出了两组（或更多）解后，进行能量函数求解的过程，将每组xy的属性值累加起来，取值最大的那组解为输出结果。<br>那么这些便是我对线性规划概念的理解了，不是很严谨肯定是有问题的，欢迎斧正及补充。主要还是自己怠惰了，没认真找过这方面的系统性学习资料，仅看到过的两份基础知识入门<sub>24</sub>、<sub>25</sub>也是一头雾水，以后有兴趣了再翻翻看吧（笑）。</p>
+<h3 id="PolyFit的线性规划术语"><a href="#PolyFit的线性规划术语" class="headerlink" title="PolyFit的线性规划术语"></a>PolyFit的线性规划术语</h3><p>胡扯了这么久，也该来看看论文中关于这部分的阐述。文中作者设置了一个硬约束来保证模型的闭合性，见下图的闭合模型硬约束公式，第一条的等式左侧变量是所有的边ei连接的面数量，讲人话来表述是它要求所有被选取的边只能连接两个面片，或所连接面片能构成更大的多边形（合并后所接的面数为0），从而使选取的边均位于闭合多边形上而不是外凸面。但如前所述，仅在该约束下候选平面集内存在多种符合条件的组合，为求得最优结果，PolyFit算法基于面片支撑点数量、面片面积和点覆盖面积这三类面片属性构建优化问题的能量函数，并通过能量最小化过程得到最优解。其中的最小化过程可以理解为，每个面片根据上述参数赋予一个值，在筛选出满足约束的所有组合后，取累计值最小的组合为规划问题的解。<br><img src="硬约束与能量方程.png" alt="硬约束与能量方程" title="硬约束与能量方程"><br>因此，如何定义合理的能量函数也是该方法的关键。PolyFit算法的能量函数由这三个能量项构成：<br><img src="能量函数项.png" alt="能量函数项" title="能量函数项"><br>数据拟合项评估由点簇所拟合平面的置信度，该值根据候选面内的平面点距及点与面的法向量差值来确定，可反映对应点云的平坦度及信噪比。<br>模型复杂性项定义为模型中锐利边缘的比例。二元函数𝑐𝑜𝑟𝑛𝑒𝑟根据相连面属性决定边e是否为锐边，由于面片均以两两相交分割得到，非孤立边与面片的所有拓扑关系如下图所示，图b、c表示边能将相连面组合为一个更大的多边形，𝑐𝑜𝑟𝑛𝑒𝑟值为1；图d到g中的边可表示为模型边界，𝑐𝑜𝑟𝑛𝑒𝑟值为0。<br>点覆盖项指模型中未覆盖点云的面片占比，它根据点簇在拟合面上的面积与拟合面总面积比值来确定。<br><img src="候选面拓扑关系.png" alt="候选面拓扑关系" title="候选面拓扑关系"></p>
+<h2 id="面片最优重建的整体流程"><a href="#面片最优重建的整体流程" class="headerlink" title="面片最优重建的整体流程"></a>面片最优重建的整体流程</h2><p>终于，理论部分基本总结完毕，进入代码解析环节。有关面片最优重建的源码封装在ReconstructProcess文件内，代码的原始版本来自Polygonal_surface_reconstruction&#x2F;polyfit_example_model_complexity_control.cpp，网址<sub>14</sub>往下翻的3.3章节便能看到，作者列出了好3种能构成不同表面复杂度的指导参数，这些参数是上面提及的能量项系数，我这里设置的值与论文建议值稍微有点不同：数据拟合项wt_fitting &#x3D; 0.43，模型复杂性项wt_complexity &#x3D; 0.30，点覆盖项wt_coverage &#x3D; 0.27，论文建议值是 0.46，0.27，0.27，相比起来相当于把拟合项的权重匀了点给复杂性项，可能是当时的我更看重模型的细节吧，印象中复杂性项的权重越高那期望的模型锐边数目&#x2F;局部细节会更多。<br>主程序中对该部分的调用代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ReconstructProcess obj_recon;</span><br><span class="line">CGAL::Surface_mesh&lt;Kernel::Point_3&gt; mesh_model;<span class="comment">//模型</span></span><br><span class="line"><span class="comment">//obj_recon.UseExtraFactor(0.05f);</span></span><br><span class="line"><span class="comment">//obj_recon.Reconstruct(mesh_candidate, mesh_model, obj_hp.GetTriplet(), 0.43f, 0.27f, 0.25f);//筛选构成模型的面片集合</span></span><br><span class="line">obj_recon.<span class="built_in">Reconstruct</span>(mesh_candidate, mesh_model, obj_hp.<span class="built_in">GetTriplet</span>(), <span class="number">0.43f</span>, <span class="number">0.27f</span>, <span class="number">0.30f</span>);<span class="comment">//默认的推荐参数</span></span><br></pre></td></tr></table></figure>
+<p>基于上一大节中的候选面集mesh_candidate，函数Reconstruct()将对其进行邻接信息提取、设置约束条件、构建约束方程和求解方程4步，将得到的最优面集组合存入到model中。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">ReconstructProcess::Reconstruct</span><span class="params">(Polygon_mesh &amp; mesh_candidate, Polygon_mesh &amp; model,</span></span></span><br><span class="line"><span class="params"><span class="function">	<span class="type">const</span> Planes_intersections &amp; map_planes_intersection,</span></span></span><br><span class="line"><span class="params"><span class="function">	<span class="type">double</span> wt_fitting, <span class="type">double</span> wt_coverage, <span class="type">double</span> wt_complexity)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	CGAL::Timer timer;<span class="comment">//时间计数的实例</span></span><br><span class="line">	timer.<span class="built_in">start</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">//0、检验数据有效性</span></span><br><span class="line">	<span class="keyword">if</span> (mesh_candidate.<span class="built_in">num_faces</span>() &lt; <span class="number">4</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		std::cout &lt;&lt; <span class="string">&quot;错误：至少需要4个候选表面才能重建出紧密模型，当前的表面集仅有 &quot;</span> + std::<span class="built_in">to_string</span>(mesh_candidate.<span class="built_in">num_faces</span>()) + <span class="string">&quot; 个面&quot;</span>;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//参数初始化</span></span><br><span class="line">	<span class="built_in">InitParameter</span>(wt_fitting, wt_coverage, wt_complexity);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//1、计算表面的邻接信息：mesh_candidate的三重交点及其边的所在面</span></span><br><span class="line">	<span class="built_in">GetAdjacency</span>(mesh_candidate, map_planes_intersection);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//2、设置约束条件</span></span><br><span class="line">	<span class="keyword">if</span> (_isUseRoofObj)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">DefineConstraintFactors_v2</span>(mesh_candidate);<span class="comment">//各能量项归一化处理</span></span><br><span class="line">		<span class="built_in">DefineConstraintFactor_TopDis</span>(mesh_candidate);<span class="comment">//添加顶面偏好项</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		<span class="built_in">DefineConstraintFactors</span>(mesh_candidate);<span class="comment">//原PolyFit方法</span></span><br><span class="line">	<span class="comment">///输出测试_能量项累计值</span></span><br><span class="line">	<span class="comment">//CheckObjectiveValue(mesh_candidate);</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//3、构建约束方程</span></span><br><span class="line">	<span class="built_in">BuildConstraint</span>(mesh_candidate);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//4、求解线性约束整数方程</span></span><br><span class="line">	<span class="built_in">SolveConstraint</span>(mesh_candidate, model);</span><br><span class="line"></span><br><span class="line">	timer.<span class="built_in">stop</span>();</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;重建模型的面数为 &quot;</span> &lt;&lt; model.<span class="built_in">faces</span>().<span class="built_in">size</span>() &lt;&lt; <span class="string">&quot; 个，运行耗时 &quot;</span> &lt;&lt; timer.<span class="built_in">time</span>() &lt;&lt; <span class="string">&quot; 秒&quot;</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="邻接信息提取"><a href="#邻接信息提取" class="headerlink" title="邻接信息提取"></a>邻接信息提取</h2><p>第一步是把候选面集的半边分类为交叉边和边缘边，便于确定所选边、面的关系。<br>该小节的代码实现在函数ReconstructProcess::GetAdjacency()，其中2部分的内容没太弄懂其中逻辑，大概是先取候选面集内的每个半边，依据前一节的三重交点集合map_planes_intersection快速定位出两个端点的坐标，以两个端点坐标为键、半边下标为值存入到哈希表face_pool。但是，我要说但是，代码里写了很多断言CGAL_assertion()，看似是做了些判断筛选，但这些都是debug用的，除非前面有些步骤导致数据出现缺失不然都不会触发，真正做了判断的仅两个：去除边界半边（只与一个面相接）、调整端点顺序，况且已知mesh中点下标的情况下可以直接拿取对应的点坐标，感觉根本不需要传入map_planes_intersection来获取。不过倒也体现了CGAL的严密性，如果前面搞了些删属性的骚操作到这一步就会跑不通。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//1、定义、声明</span></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt; vertex_supporting_planes</span><br><span class="line">	= mesh_candidate.<span class="keyword">template</span> property_map&lt;Polygon_mesh::Vertex_index, std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt; &gt;(<span class="string">&quot;v:supp_plane&quot;</span>).first;<span class="comment">//属性映射_每个点的支撑面</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 边由它的两个端点表示</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">typename</span> std::unordered_map&lt;<span class="type">const</span> Kernel::Point_3*, std::set&lt;Polygon_mesh::Halfedge_index&gt; &gt;	Edge_map;<span class="comment">//无序映射_点指针对应半边索引集合，表示边与它的半边</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">typename</span> std::unordered_map&lt;<span class="type">const</span> Kernel::Point_3*, Edge_map &gt;									Face_pool;<span class="comment">//无序映射_点指针对应Edge_map，表示一组邻接关系</span></span><br><span class="line">Face_pool face_pool;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//2、向 face_pool 中存入非边界边的所在面及边的两个顶点坐标，每个顶点为三重交点</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> h : mesh_candidate.<span class="built_in">halfedges</span>())</span><br><span class="line">&#123;</span><br><span class="line">	Polygon_mesh::Face_index f = mesh_candidate.<span class="built_in">face</span>(h);<span class="comment">//获取每个半边所在的面索引</span></span><br><span class="line">	<span class="keyword">if</span> (f == Polygon_mesh::<span class="built_in">null_face</span>())</span><br><span class="line">		<span class="keyword">continue</span>;<span class="comment">//半边没有对应的面，则为边界半边，跳过</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//获取半边的目标顶点+源顶点、其所在的平面</span></span><br><span class="line">	Polygon_mesh::Vertex_index sd = mesh_candidate.<span class="built_in">source</span>(h);</span><br><span class="line">	Polygon_mesh::Vertex_index td = mesh_candidate.<span class="built_in">target</span>(h);</span><br><span class="line">	<span class="type">const</span> std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt;&amp; set_s = vertex_supporting_planes[sd];</span><br><span class="line">	<span class="type">const</span> std::set&lt;<span class="type">const</span> Kernel::Plane_3*&gt;&amp; <span class="type">set_t</span> = vertex_supporting_planes[td];</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(set_s.<span class="built_in">size</span>() == <span class="number">3</span>);<span class="comment">//断言_点所在的平面集合有三个元素，即顶点是由三个平面相交而成的</span></span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(<span class="type">set_t</span>.<span class="built_in">size</span>() == <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">	<span class="function">std::vector&lt;<span class="type">const</span> Kernel::Plane_3*&gt; <span class="title">s_planes</span><span class="params">(set_s.begin(), set_s.end())</span></span>;<span class="comment">//将平面集合转存至容器中，方便调取</span></span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(s_planes[<span class="number">0</span>] &lt; s_planes[<span class="number">1</span>]);<span class="comment">//断言_平面按序排列</span></span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(s_planes[<span class="number">1</span>] &lt; s_planes[<span class="number">2</span>]);</span><br><span class="line">	<span class="type">const</span> Kernel::Point_3* s = map_planes_intersection[s_planes[<span class="number">0</span>]][s_planes[<span class="number">1</span>]][s_planes[<span class="number">2</span>]];<span class="comment">//获取交点坐标</span></span><br><span class="line"></span><br><span class="line">	<span class="function">std::vector&lt;<span class="type">const</span> Kernel::Plane_3*&gt; <span class="title">t_planes</span><span class="params">(<span class="type">set_t</span>.begin(), <span class="type">set_t</span>.end())</span></span>;</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(t_planes[<span class="number">0</span>] &lt; t_planes[<span class="number">1</span>]);</span><br><span class="line">	<span class="built_in">CGAL_assertion</span>(t_planes[<span class="number">1</span>] &lt; t_planes[<span class="number">2</span>]);</span><br><span class="line">	<span class="type">const</span> Kernel::Point_3* t = map_planes_intersection[t_planes[<span class="number">0</span>]][t_planes[<span class="number">1</span>]][t_planes[<span class="number">2</span>]];</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (s &gt; t)</span><br><span class="line">		std::<span class="built_in">swap</span>(s, t);<span class="comment">//源顶点坐标大于目标顶点，则它们的顺序不一致，交换两者的值</span></span><br><span class="line">	face_pool[s][t].<span class="built_in">insert</span>(mesh_candidate.<span class="built_in">halfedge</span>(f));<span class="comment">//源顶点和目标顶点坐标为键，半边所在的面索引为值，插入到 face_pool</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第3部分则把face_pool换了个结构体Intersection转存到std::vector<Intersection> _adjacency。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//结构体_平面相交半边的点结构，继承自容器_多边形网络半边索引</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Intersection</span> : <span class="keyword">public</span> std::vector&lt;Polygon_mesh::Halfedge_index&gt;</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">const</span> Kernel::Point_3* s;<span class="comment">//指针_相交半边的起点坐标</span></span><br><span class="line">	<span class="type">const</span> Kernel::Point_3* t;<span class="comment">//指针_相交半边的终点坐标</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//3、使用 _adjacency 转存 face_pool 中的信息</span></span><br><span class="line"><span class="keyword">for</span> (Face_pool::const_iterator it = face_pool.<span class="built_in">begin</span>(); it != face_pool.<span class="built_in">end</span>(); ++it)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">const</span> Kernel::Point_3* s = it-&gt;first;<span class="comment">//源顶点坐标</span></span><br><span class="line">	<span class="type">const</span> Edge_map&amp; tmp = it-&gt;second;</span><br><span class="line">	<span class="keyword">typename</span> Edge_map::const_iterator cur = tmp.<span class="built_in">begin</span>();</span><br><span class="line">	<span class="keyword">for</span> (; cur != tmp.<span class="built_in">end</span>(); ++cur)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">const</span> Kernel::Point_3* t = cur-&gt;first;<span class="comment">//目标顶点坐标</span></span><br><span class="line">		<span class="type">const</span> std::set&lt;Polygon_mesh::Halfedge_index&gt;&amp; faces = cur-&gt;second;<span class="comment">//集合_半边索引</span></span><br><span class="line">		Intersection fan;</span><br><span class="line">		fan.s = s;</span><br><span class="line">		fan.t = t;</span><br><span class="line">		fan.<span class="built_in">insert</span>(fan.<span class="built_in">end</span>(), faces.<span class="built_in">begin</span>(), faces.<span class="built_in">end</span>());</span><br><span class="line">		_adjacency.<span class="built_in">push_back</span>(fan);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="设置约束条件"><a href="#设置约束条件" class="headerlink" title="设置约束条件"></a>设置约束条件</h2><p>先看DefineConstraintFactors()中的内容，这里面封装的是原PolyFit的约束方案。第1部分是常规的变量声明，提一嘴题外话，更老练的变量声明应该放在头文件中类的私有变量那，函数用到的时候再给它定义&#x2F;初始化&#x2F;分配内存，印象中PolyFit的源码也是这么写的，当初大概是为了理清算法里面的过程，把这些变量的声明定义绑到一起塞到各个函数内做封装，现在回看有点吃力不讨好。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//1、参数定义/起别名</span></span><br><span class="line"><span class="comment">//mesh_candidate属性映射</span></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt; face_num_supporting_points =</span><br><span class="line">	mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt;(<span class="string">&quot;f:num_supporting_points&quot;</span>).first;<span class="comment">//属性映射_面的支撑点数量</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, FT&gt; face_areas =</span><br><span class="line">	mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, FT&gt;(<span class="string">&quot;f:face_area&quot;</span>).first;<span class="comment">//属性映射_面的面积</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, FT&gt; face_covered_areas =</span><br><span class="line">	mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, FT&gt;(<span class="string">&quot;f:covered_area&quot;</span>).first;<span class="comment">//属性映射_面的点覆盖面积</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt; face_indices =</span><br><span class="line">	mesh_candidate.<span class="keyword">template</span> <span class="built_in">add_property_map</span>&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt;(<span class="string">&quot;f:index&quot;</span>).first;<span class="comment">//属性映射_面索引</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//支撑点总数</span></span><br><span class="line"><span class="type">double</span> total_points = <span class="number">0.0</span>;</span><br><span class="line">std::<span class="type">size_t</span> idx = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> f : mesh_candidate.<span class="built_in">faces</span>())</span><br><span class="line">&#123;</span><br><span class="line">	total_points += face_num_supporting_points[f];</span><br><span class="line">	face_indices[f] = idx;<span class="comment">//给每个面附上新的索引值</span></span><br><span class="line">	++idx;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">std::<span class="type">size_t</span> num_faces = mesh_candidate.<span class="built_in">number_of_faces</span>();<span class="comment">//候选表面的面数量</span></span><br><span class="line"><span class="function">std::<span class="type">size_t</span> <span class="title">num_edges</span><span class="params">(<span class="number">0</span>)</span></span>;<span class="comment">//交叉边数量，初始值为0</span></span><br></pre></td></tr></table></figure>
+<p>第2部分，计算一些中间变量，主要是为交叉边索引edge_usage_status和锐利边索引edge_sharp_status取值，以此设置线性规划求解器MIP_Solver的变量对象variables。这里作者设置约束的变量总个数为候选面数+两倍交叉边数，每个变量为二进制类型只可取值0或1。这段代码对应图2硬约束的第二个式子，其中，每个变量取二进制好理解，1和0表示在提取最优面集的过程中，是否保留该候选面&#x2F;边，比较摸不着头脑的是它的变量总数是num_faces + num_edges * 2 而不是 num_faces + num_edges，问了下ai猜测原因如下：<br>（1）每个候选面对应一个二进制变量（数量为num_faces），用于决定该面是否被选中。<br>（2）每个边需要两个变量进行约束，第一个为保留状态变量（数量为num_edges），决定该边是否保留；第二个为锐&#x2F;交叉边状态变量（数量为num_edges），用于判断该边是否为交叉边。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span>:</span><br><span class="line">	std::unordered_map&lt;<span class="type">const</span> Intersection*, std::<span class="type">size_t</span>&gt; edge_usage_status;<span class="comment">//无序映射_交叉边索引，表示该交叉边被保留或移除</span></span><br><span class="line">	std::unordered_map&lt;<span class="type">const</span> Intersection*, std::<span class="type">size_t</span>&gt; edge_sharp_status;<span class="comment">//无序映射_锐利边索引，表示其是否为锐利边</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//2、计算约束条件的值</span></span><br><span class="line"><span class="comment">// edge_usage_status 赋值</span></span><br><span class="line"><span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; _adjacency.<span class="built_in">size</span>(); ++i)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//遍历所有含邻接关系的边，并将包含4个半边的交叉边索引添加到 edge_usage_status</span></span><br><span class="line">	<span class="comment">//该边由4个候选面相交而成</span></span><br><span class="line">	<span class="type">const</span> Intersection&amp; fan = _adjacency[i];</span><br><span class="line">	<span class="keyword">if</span> (fan.<span class="built_in">size</span>() == <span class="number">4</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//交叉边索引 为键，候选面数量+交叉边数量 为值</span></span><br><span class="line">		std::<span class="type">size_t</span> var_idx = num_faces + num_edges;</span><br><span class="line">		edge_usage_status[&amp;fan] = var_idx;</span><br><span class="line">		++num_edges;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// variables 定义、赋值</span></span><br><span class="line">std::<span class="type">size_t</span> total_variables = num_faces + num_edges + num_edges;<span class="comment">//总变量数量 = 候选面数量 + 2 * 交叉边数量</span></span><br><span class="line">variables = solver.<span class="built_in">create_variables</span>(total_variables);<span class="comment">//容器_变量个数为 total_variables</span></span><br><span class="line"><span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; total_variables; ++i)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//为每个变量设置类型为 BINARY二进制，只能取0或1</span></span><br><span class="line">	MIP_Solver::Variable* v = variables[i];</span><br><span class="line">	v-&gt;<span class="built_in">set_variable_type</span>(MIP_Solver::Variable::BINARY);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第3部分，设置线性目标函数对象objective，它的类型（目标）为线性最小化，这意味着在整个混合整数规划（MIP）问题中，求解器将会寻找一组变量取值，使得目标函数的值尽可能低。这块值得注意的点是对权重系数的再次计算，在我摘抄的代码中拟合项的权重不变，余下两项乘上点云的总点数，其中点覆盖项再除以包围盒表面积（area(M)），复杂度项除以非边界的半边数量（|E|）。它们俩的除数处理对应能量函数项公式中各自的分子项；乘以总点数的理由按作者在GitHub上的答疑<sub>26</sub>，是为了将权重系数从[0,1.0f]的范围映射到[0,total_points]，以避免浮点数的精度损失。<br>（注：我不太确定当时摘抄是否改动了权重系数的内容，应该是没有的没那么扎实的理论储备我不敢乱调，且github上对形类似式的权重系数代码，作者的答疑是“所有三个权重都简单地乘以总点数”，或许拟合项的权重系数_wt_fitting在别的地方做了“乘以总点数”的处理）</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//3、添加MIP_Solver的 objective（各个能量项？）</span></span><br><span class="line"><span class="comment">//候选面集的顶点坐标及其包围盒参数</span></span><br><span class="line"><span class="function">std::vector&lt;Kernel::Point_3&gt; <span class="title">vertices</span><span class="params">(mesh_candidate.number_of_vertices())</span></span>;</span><br><span class="line">idx = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> v : mesh_candidate.<span class="built_in">vertices</span>())</span><br><span class="line">&#123;</span><br><span class="line">	vertices[idx] = mesh_candidate.<span class="built_in">points</span>()[v];</span><br><span class="line">	++idx;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">const</span> Kernel::Iso_cuboid_3&amp; box = CGAL::<span class="built_in">bounding_box</span>(vertices.<span class="built_in">begin</span>(), vertices.<span class="built_in">end</span>());<span class="comment">//计算 vertices 点集的最小包围盒</span></span><br><span class="line">FT dx = box.<span class="built_in">xmax</span>() - box.<span class="built_in">xmin</span>();<span class="comment">//包围盒xyz方向上的长度</span></span><br><span class="line">FT dy = box.<span class="built_in">ymax</span>() - box.<span class="built_in">ymin</span>();</span><br><span class="line">FT dz = box.<span class="built_in">zmax</span>() - box.<span class="built_in">zmin</span>();</span><br><span class="line">FT box_area = <span class="built_in">FT</span>(<span class="number">2.0</span>) * (dx * dy + dy * dz + dz * dx);<span class="comment">//包围盒表面积</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//选择更好的尺度</span></span><br><span class="line"><span class="type">double</span> coeff_data_fitting = _wt_fitting;<span class="comment">//拟合项的权重系数</span></span><br><span class="line"><span class="type">double</span> coeff_coverage = total_points * _wt_coverage / box_area;<span class="comment">//点覆盖项的权重系数</span></span><br><span class="line"><span class="type">double</span> coeff_complexity = total_points * _wt_complexity / <span class="built_in">double</span>(_adjacency.<span class="built_in">size</span>());<span class="comment">//复杂度项的权重系数</span></span><br><span class="line"></span><br><span class="line"><span class="comment">///输出测试</span></span><br><span class="line"><span class="comment">//std::cout &lt;&lt; coeff_data_fitting &lt;&lt; &quot;  &quot; &lt;&lt; coeff_coverage &lt;&lt; &quot;  &quot; &lt;&lt; coeff_complexity &lt;&lt; std::endl;</span></span><br><span class="line"></span><br><span class="line">MIP_Solver::Linear_objective * objective = solver.<span class="built_in">create_objective</span>(MIP_Solver::Linear_objective::MINIMIZE);<span class="comment">//指针_线性目标函数对象，并设置类型为最小化</span></span><br></pre></td></tr></table></figure>
+<p>余下的一小部分内容，是对线性目标函数objective中的每个变量variables累计能量项值，然后设置约束条件MIP_Solver::Linear_constraint* c。代码中每个variables累计能量项的过程为：找到非边界半边集合_adjacency中的所有锐边，属于锐边的变量累加一个复杂度项的值coeff_complexity；遍历候选面集mesh_candidate中的每个面片，按面下标找到对应的variables并累计数据拟合项的值：<br>负的复杂度项权重*该面片的整成点数量。支撑点数量的计算过程可跳转到compute_confidences.h的Candidate_confidences<Kernel>::compute查阅（201-202行），负号意味着支持点越多，拟合能量越低，从而鼓励目标函数选取支持点数更多的面；<br>最后一个点覆盖项，先计算每个面的未覆盖面积（面片的总面积减去已覆盖面积），并以coeff_coverage为权重将该值累计进目标函数的MIP变量。这一项的目的是惩罚未被覆盖的区域，从而引导最终模型更好地覆盖点云数据。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// edge_sharp_status 赋值</span></span><br><span class="line">std::<span class="type">size_t</span> num_sharp_edges = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; _adjacency.<span class="built_in">size</span>(); ++i)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">const</span> Intersection&amp; fan = _adjacency[i];</span><br><span class="line">	<span class="keyword">if</span> (fan.<span class="built_in">size</span>() == <span class="number">4</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		std::<span class="type">size_t</span> var_idx = num_faces + num_edges + num_sharp_edges;<span class="comment">//尖锐边数量可能小于交叉边，部分variables全程0值？</span></span><br><span class="line">		edge_sharp_status[&amp;fan] = var_idx;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//累计复杂度项</span></span><br><span class="line">		objective-&gt;<span class="built_in">add_coefficient</span>(variables[var_idx], coeff_complexity);<span class="comment">//为每个MIP变量添加系数</span></span><br><span class="line">																		 <span class="comment">//系数 = 复杂度项的权重，表示复杂度项是最小化目标</span></span><br><span class="line">		++num_sharp_edges;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">CGAL_assertion</span>(num_edges == num_sharp_edges);</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> f : mesh_candidate.<span class="built_in">faces</span>())</span><br><span class="line">&#123;</span><br><span class="line">	std::<span class="type">size_t</span> var_idx = face_indices[f];</span><br><span class="line"></span><br><span class="line">	<span class="comment">//累计数据拟合项</span></span><br><span class="line">	std::<span class="type">size_t</span> num = face_num_supporting_points[f];<span class="comment">//面的支撑点数量</span></span><br><span class="line">	objective-&gt;<span class="built_in">add_coefficient</span>(variables[var_idx], -coeff_data_fitting * num);<span class="comment">//为每个MIP变量添加系数</span></span><br><span class="line">																			  <span class="comment">//系数=拟合能量项的权重*（-支撑点数），表示拟合能量项是最小化目标</span></span><br><span class="line">	<span class="comment">//累计点覆盖项</span></span><br><span class="line">	<span class="type">double</span> uncovered_area = (face_areas[f] - face_covered_areas[f]);<span class="comment">//面的未覆盖面积</span></span><br><span class="line">	objective-&gt;<span class="built_in">add_coefficient</span>(variables[var_idx], coeff_coverage * uncovered_area);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后为了满足闭合网格要求（内部边恰好被两个面共享），添加约束条件MIP_Solver::Linear_constraint* c确保“与边关联的面数必须为2或0”。在面变量部分，对fan中每个候选面，将对应的面变量以系数1添加到约束中，这样约束项累加了fan内所有面的变量；边变量部分，若为内部交叉边（fan.size() &#x3D;&#x3D; 4，fan由四个面构成），取出对应的边变量并添加系数-2。由此构成的约束表达式如下所示：<br><img src="闭合硬约束.png" alt="闭合硬约束" title="闭合硬约束"><br>由于边界边不属于封闭模型的一部分，若该变量为边界边，则不对其累计额外的约束值。（注：这里add_coefficient的对象为线性约束变量c，上面的add_coefficient对象为线性目标函数objective，注意累计值的区分）</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//添加约束：与边关联的面数必须为2或0</span></span><br><span class="line">std::<span class="type">size_t</span> var_edge_used_idx = <span class="number">0</span>;<span class="comment">//记录当前交叉边对应的变量索引</span></span><br><span class="line"><span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; _adjacency.<span class="built_in">size</span>(); ++i)</span><br><span class="line">&#123;</span><br><span class="line">	MIP_Solver::Linear_constraint* c = solver.<span class="built_in">create_constraint</span>(<span class="number">0.0</span>, <span class="number">0.0</span>);<span class="comment">//线性约束_约束上界和下界 = 0，表示无约束条件约束(无取值范围限制</span></span><br><span class="line">	<span class="type">const</span> Intersection&amp; fan = _adjacency[i];</span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> j = <span class="number">0</span>; j &lt; fan.<span class="built_in">size</span>(); ++j)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//对面添加约束</span></span><br><span class="line">		Polygon_mesh::Face_index f = mesh_candidate.<span class="built_in">face</span>(fan[j]);</span><br><span class="line">		std::<span class="type">size_t</span> var_idx = face_indices[f];</span><br><span class="line">		c-&gt;<span class="built_in">add_coefficient</span>(variables[var_idx], <span class="number">1.0</span>);<span class="comment">//表示约束中包含变量 variables[var_idx]</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//交叉边由四个候选面相交而成</span></span><br><span class="line">	<span class="keyword">if</span> (fan.<span class="built_in">size</span>() == <span class="number">4</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//对交叉边添加约束</span></span><br><span class="line">		std::<span class="type">size_t</span> var_idx = num_faces + var_edge_used_idx;</span><br><span class="line">		c-&gt;<span class="built_in">add_coefficient</span>(variables[var_idx], <span class="number">-2.0</span>);<span class="comment">//表示约束中包含这个变量，并且它与其他变量之和必须等于零？</span></span><br><span class="line">		++var_edge_used_idx;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//交叉边为边界边，不添加任何系数，因为生成的模型不为开放的表面模型</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="设置额外的能量项"><a href="#设置额外的能量项" class="headerlink" title="设置额外的能量项"></a>设置额外的能量项</h3><p>首要说明的是，代码中的DefineConstraintFactors_v2()与DefineConstraintFactor_TopDis()现在看来均是有问题的。DefineConstraintFactors_v2()相较于DefineConstraintFactors()少了尺度处理部分，本意是想直接按归一化的权重来累计objective中的能量值，但佘略的步骤有两个隐患：一是代码与能量项公式不符，每个项的系数均少了分母项；二是如<sub>26</sub>所说会有潜在的精度损失。而另一个函数DefineConstraintFactor_TopDis()是我对修改能量公式的一次失败尝试，从最终结果上看，顶部表面凹凸不平坑坑洼洼而不是更丰富、规整的细化结构，或许是权重分配的不合理&#x2F;未设置额外的条件约束。<br>不管怎么说，还是把这一坨保留下来存档了，属于是相当简陋了（笑）。代码中先取出指向MIP求解器的线性对象指针*objective，为mesh_candidate中的所有面对象累计值_wt_roof * dist_p2boxTop，_wt_roof是预设的权重系数，dist_p2boxTop是该面片到包围盒顶部的归一化距离值，详见上一大节的“添加额外的平面属性”，理论上会让求解器更倾向于选取靠近顶部的面（这类variables累计的值相对而言更小）。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">ReconstructProcess::DefineConstraintFactor_TopDis</span><span class="params">(<span class="type">const</span> Polygon_mesh &amp; mesh_candidate)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, <span class="type">double</span>&gt; face_roof =</span><br><span class="line">		mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, <span class="type">double</span>&gt;(<span class="string">&quot;f:dist_boxTop&quot;</span>).first;<span class="comment">//属性映射_面片属顶面</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt; face_indices =</span><br><span class="line">		mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt;(<span class="string">&quot;f:index&quot;</span>).first;<span class="comment">//属性映射_面索引</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//double total_points = 0.0;//支撑点总数</span></span><br><span class="line">	<span class="comment">//std::size_t num_faces = mesh_candidate.number_of_faces();//候选表面的面数量</span></span><br><span class="line"></span><br><span class="line">	MIP_Solver::Linear_objective * objective = solver.<span class="built_in">objective</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">//对每个能量函数，累计顶面偏好值</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">auto</span> f : mesh_candidate.<span class="built_in">faces</span>())</span><br><span class="line">	&#123;</span><br><span class="line">		std::<span class="type">size_t</span> var_idx = face_indices[f];</span><br><span class="line"></span><br><span class="line">		<span class="type">double</span> dist_p2boxTop = face_roof[f];</span><br><span class="line">		objective-&gt;<span class="built_in">add_coefficient</span>(variables[var_idx], _wt_roof * dist_p2boxTop);<span class="comment">//离包围盒顶面越远，值越大</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这部分默认是不使用的，可将_isUseRoofObj修改为true来启用。</p>
+<h2 id="构建约束方程"><a href="#构建约束方程" class="headerlink" title="构建约束方程"></a>构建约束方程</h2><p>这一部分的内容那会翻译错名字了，应该是“补充约束”更贴合些，其核心目的是为候选面片mesh_candidate中那些与锐边相关的对象添加约束，从而保证在重构过程中如果某个边被认定为锐边，那么其相邻的面必须满足一定的选择条件，避免出现不连续或不合理的表面。<br>代码封装在ReconstructProcess::BuildConstraint()，代码解析大多借助GPT。松弛因子M用于构造带有条件逻辑的线性约束，使得约束可以用线性表达式表示。然后是按照不等式“X[var_edge_usage_idx] - X[var_edge_sharp_idx] &gt;&#x3D; 0”构建约束，它表明如果一个边被标记为锐边（X[var_edge_usage_idx] &#x3D; 1），则它一定要被选中（X[var_edge_sharp_idx] &#x3D; 1），以保持约束成立。若边没有被使用，则无论其是否为锐边，这个约束都会自动满足（可能此时约束的值为0，大概）。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">ReconstructProcess::BuildConstraint</span><span class="params">(<span class="type">const</span> Polygon_mesh &amp; mesh_candidate)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//为尖锐的边缘添加约束。提出这个限制的解释可以在这里找到:</span></span><br><span class="line">	<span class="comment">// https://user-images.githubusercontent.com/15526536/30185644-12085a9c-942b-11e7-831d-290dd2a4d50c.png</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">// mesh_candidate 属性映射</span></span><br><span class="line">	<span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, <span class="type">const</span> Kernel::Plane_3*&gt; face_supporting_planes =</span><br><span class="line">		mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, <span class="type">const</span> Kernel::Plane_3*&gt;(<span class="string">&quot;f:supp_plane&quot;</span>).first;<span class="comment">//属性映射_面的支撑面</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt; face_indices =</span><br><span class="line">		mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt;(<span class="string">&quot;f:index&quot;</span>).first;<span class="comment">//属性映射_面索引</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="type">double</span> M = <span class="number">1.0</span>;<span class="comment">//线性规划中的松弛变量</span></span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; _adjacency.<span class="built_in">size</span>(); ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">const</span> Intersection&amp; fan = _adjacency[i];<span class="comment">//获取容器_邻接关系中的交叉边</span></span><br><span class="line">		<span class="keyword">if</span> (fan.<span class="built_in">size</span>() != <span class="number">4</span>)</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//构建约束：X[var_edge_usage_idx] &gt;= X[var_edge_sharp_idx]。表示如果一个交叉边是锐利的，那么它必须被选择</span></span><br><span class="line">		MIP_Solver::Linear_constraint* c = solver.<span class="built_in">create_constraint</span>(<span class="number">0.0</span>);<span class="comment">//线性约束对象_下界，表示约束是大于等于0的不等式约束</span></span><br><span class="line">		std::<span class="type">size_t</span> var_edge_usage_idx = edge_usage_status[&amp;fan];</span><br><span class="line">		c-&gt;<span class="built_in">add_coefficient</span>(variables[var_edge_usage_idx], <span class="number">1.0</span>);<span class="comment">//对使用状态变量添加系数，系数值为1.0</span></span><br><span class="line">		std::<span class="type">size_t</span> var_edge_sharp_idx = edge_sharp_status[&amp;fan];</span><br><span class="line">		c-&gt;<span class="built_in">add_coefficient</span>(variables[var_edge_sharp_idx], <span class="number">-1.0</span>);<span class="comment">//对锐利状态变量添加系数，系数值为-1.0</span></span><br><span class="line"></span><br><span class="line">		<span class="comment">//额外约束</span></span><br><span class="line">		<span class="comment">//......</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">///输出测试</span></span><br><span class="line">	<span class="comment">//std::cout &lt;&lt; &quot;最后的各个变量项&quot; &lt;&lt; std::endl;</span></span><br><span class="line">	<span class="comment">//CheckObjectiveValue(mesh_candidate);</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>内层的双重循环是为每对邻接关系的相关面添加额外约束，取当前邻接fan关联的所有面两两组合，外层循环的为f1内层循环为f2，判断组合的这两个面是否共面，若对应的支撑面face_supporting_planes不同则不共面，则两个面在几何上存在不连续的可能，需进一步设置约束。该约束的表达式见注释部分，其中，为满足锐边的约束（X[var_edge_sharp_idx] &#x3D; 1的情况），要求该边相关的四个面至少有两个面被选中。代码的写法应该是在该约束c中，所选的边、面变量的累加值不小于1 - 3M。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//额外约束</span></span><br><span class="line"><span class="keyword">for</span> (std::<span class="type">size_t</span> j = <span class="number">0</span>; j &lt; fan.<span class="built_in">size</span>(); ++j)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//获取相邻次序的两个交叉边及其支撑面</span></span><br><span class="line">	Polygon_mesh::Face_index f1 = mesh_candidate.<span class="built_in">face</span>(fan[j]);</span><br><span class="line">	<span class="type">const</span> Kernel::Plane_3* plane1 = face_supporting_planes[f1];</span><br><span class="line">	std::<span class="type">size_t</span> fid1 = face_indices[f1];</span><br><span class="line">	<span class="keyword">for</span> (std::<span class="type">size_t</span> k = j + <span class="number">1</span>; k &lt; fan.<span class="built_in">size</span>(); ++k)</span><br><span class="line">	&#123;</span><br><span class="line">		Polygon_mesh::Face_index f2 = mesh_candidate.<span class="built_in">face</span>(fan[k]);</span><br><span class="line">		<span class="type">const</span> Kernel::Plane_3* plane2 = face_supporting_planes[f2];</span><br><span class="line">		std::<span class="type">size_t</span> fid2 = face_indices[f2];</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (plane1 != plane2)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="comment">//两个支撑面不共面的情况下，构成约束：X[var_edge_sharp_idx] + M * (3 - (X[fid1] + X[fid2] + X[var_edge_usage_idx])) &gt;= 1，</span></span><br><span class="line">			<span class="comment">//等价于：X[var_edge_sharp_idx] - M * X[fid1] - M * X[fid2] - M * X[var_edge_usage_idx] &gt;= 1 - 3M</span></span><br><span class="line">			<span class="comment">//表示如果一个交叉边是锐利的，那么它所在的四个面中至少有两个被选择，否则就会导致表面不连续</span></span><br><span class="line">			c = solver.<span class="built_in">create_constraint</span>(<span class="number">1.0</span> - <span class="number">3.0</span> * M);<span class="comment">//线性约束对象_下界，表示约束是大于等于这个值的不等式约束</span></span><br><span class="line">			c-&gt;<span class="built_in">add_coefficient</span>(variables[var_edge_sharp_idx], <span class="number">1.0</span>);<span class="comment">//线性约束对象_对锐利状态变量添加一个系数，设为1.0</span></span><br><span class="line">			c-&gt;<span class="built_in">add_coefficient</span>(variables[fid1], -M);<span class="comment">//线性约束对象_设置第一面的变量系数为-M</span></span><br><span class="line">			c-&gt;<span class="built_in">add_coefficient</span>(variables[fid2], -M);<span class="comment">//线性约束对象_设置第二面的变量系数为-M</span></span><br><span class="line">			c-&gt;<span class="built_in">add_coefficient</span>(variables[var_edge_usage_idx], -M);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>综上，BuildConstraint()额外设置了两条约束，第一条约束：若一条边为锐边，则该边必须被激活使用；第二条约束：锐边的邻近关系中必须有两个面被选择，来确保网络的表面整体连续。</p>
+<h2 id="约束方程求解"><a href="#约束方程求解" class="headerlink" title="约束方程求解"></a>约束方程求解</h2><p>第四部分，在列好线性规划问题的变量对象及约束条件后，调用MIP求解器解出候选网络的最优组合，进而生成三维模型。实现代码封装在ReconstructProcess::SolveConstraint()中，首先，先调用求解器的solve()方法，只有在求解器成功找到一个满足所有约束的解时，才对候选网格进行处理。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (solver.<span class="built_in">solve</span>())<span class="comment">//求解线性规划问题成功</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//后续的处理基于求解成功后的解</span></span><br><span class="line">	<span class="comment">//...</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">	std::cerr &lt;&lt; <span class="string">&quot;solving the binary program failed&quot;</span> &lt;&lt; std::endl;</span><br></pre></td></tr></table></figure>
+<p>求解完毕后，将所有变量（面、边的选择、尖锐边状态）的值用solver.solution()取出并存入到解向量X中，这些解应该是0或1的二元解。然后，<br>遍历候选面集的下标并从X中取相应的值，若其值四舍五入后为0，说明这个面在解中没有被选中，将其记录到删除列表to_delete。接着调用CGAL::Euler::remove_face()方法，根据to_delete中面的半边索引移除mesh_candidate所有未被选中的面。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//1、根据solve中的解，删除 mesh_candidate 中相应的边</span></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt; face_indices =</span><br><span class="line">	mesh_candidate.<span class="keyword">template</span> <span class="built_in">property_map</span>&lt;Polygon_mesh::Face_index, std::<span class="type">size_t</span>&gt;(<span class="string">&quot;f:index&quot;</span>).first;<span class="comment">//属性映射_面索引</span></span><br><span class="line"></span><br><span class="line"><span class="type">const</span> std::vector&lt;<span class="type">double</span>&gt;&amp; X = solver.<span class="built_in">solution</span>();<span class="comment">//线性规划问题的解</span></span><br><span class="line"></span><br><span class="line">std::vector&lt;Polygon_mesh::Face_index&gt; to_delete;<span class="comment">//容器_面索引_记录需要删除的面</span></span><br><span class="line"><span class="function">std::<span class="type">size_t</span> <span class="title">f_idx</span><span class="params">(<span class="number">0</span>)</span></span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> f : mesh_candidate.<span class="built_in">faces</span>())</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">///输出测试2.9</span></span><br><span class="line">	<span class="comment">//std::cout &lt;&lt; X[f_idx] &lt;&lt; &quot;  &quot;;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//解的值四舍五入后等于0，说明这个面没有被选择，将该面的索引存入 to_delete</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(std::<span class="built_in">round</span>(X[f_idx])) == <span class="number">0</span>)</span><br><span class="line">		to_delete.<span class="built_in">push_back</span>(f);</span><br><span class="line">	++f_idx;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//遍历需要删除的面，使用 CGAL::Euler::remove_face() ，根据半边索引删除相应面</span></span><br><span class="line"><span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; to_delete.<span class="built_in">size</span>(); ++i)</span><br><span class="line">&#123;</span><br><span class="line">	Polygon_mesh::Face_index f = to_delete[i];</span><br><span class="line">	Polygon_mesh::Halfedge_index h = mesh_candidate.<span class="built_in">halfedge</span>(f);</span><br><span class="line">	CGAL::Euler::<span class="built_in">remove_face</span>(h, mesh_candidate);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还有一小部分内容是更新面集的锐边信息，对mesh_candidate中的边增加一个属性”e:sharp_edges”，然后标记MIP解中满足锐边条件的边，设该属性值为true，方便后续处理中对这些边做特殊处理（提取边界特征、细化锐角等）。本程序后续未有效利用该属性，可视情况注释掉。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//2、设置 mesh_candidate 中的锐利边属性</span></span><br><span class="line"><span class="keyword">typename</span> Polygon_mesh::<span class="keyword">template</span> Property_map&lt;Polygon_mesh::Edge_index, <span class="type">bool</span>&gt; edge_is_sharp =</span><br><span class="line">	mesh_candidate.<span class="keyword">template</span> <span class="built_in">add_property_map</span>&lt;Polygon_mesh::Edge_index, <span class="type">bool</span>&gt;(<span class="string">&quot;e:sharp_edges&quot;</span>).first;<span class="comment">//属性映射_是否锐利边</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> e : mesh_candidate.<span class="built_in">edges</span>())</span><br><span class="line">	edge_is_sharp[e] = <span class="literal">false</span>;<span class="comment">//该属性映射默认没有锐利边</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (std::<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; _adjacency.<span class="built_in">size</span>(); ++i)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">const</span> Intersection&amp; fan = _adjacency[i];</span><br><span class="line">	<span class="keyword">if</span> (fan.<span class="built_in">size</span>() != <span class="number">4</span>)</span><br><span class="line">		<span class="keyword">continue</span>;<span class="comment">//跳过边界边</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//获取交叉边的锐利状态变量索引，若该值为1（该边是锐利的）</span></span><br><span class="line">	std::<span class="type">size_t</span> idx_sharp_var = edge_sharp_status[&amp;fan];</span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(X[idx_sharp_var]) == <span class="number">1</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">for</span> (std::<span class="type">size_t</span> j = <span class="number">0</span>; j &lt; fan.<span class="built_in">size</span>(); ++j)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="comment">//获取每个半边的索引和相应的面索引，若面索引非空（该面未被删除）</span></span><br><span class="line">			Polygon_mesh::Halfedge_index h = fan[j];</span><br><span class="line">			Polygon_mesh::Face_index f = mesh_candidate.<span class="built_in">face</span>(h);</span><br><span class="line">			<span class="keyword">if</span> (f != Polygon_mesh::<span class="built_in">null_face</span>())</span><br><span class="line">			&#123;</span><br><span class="line">				<span class="comment">//获取该面，若果解的fid元素四舍五入后值为1</span></span><br><span class="line">				std::<span class="type">size_t</span> fid = face_indices[f];</span><br><span class="line">				<span class="keyword">if</span> (<span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(std::<span class="built_in">round</span>(X[fid])) == <span class="number">1</span>)</span><br><span class="line">				&#123;</span><br><span class="line">					Polygon_mesh::Edge_index e = mesh_candidate.<span class="built_in">edge</span>(h);</span><br><span class="line">					edge_is_sharp[e] = <span class="literal">true</span>;<span class="comment">//该面被选择，设置该边的 属性映射_锐利 值为真</span></span><br><span class="line">					<span class="keyword">break</span>;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>此时的mesh_candidate便是最终的网络模型，调用CGAL::copy_face_graph将其复制到model中，它反映了求解器给出的最佳选择结果。<br><img src="候选面集2闭合模型.png" alt="候选面集2闭合模型" title="候选面集2闭合模型"><br>OK兄弟们，PolyFit的整个流程总算走完一遍了，传入的点云数据历经区域聚类、平面拟合、两两相交细分、线性规划求解后，终于生成了一整块闭合且贴近原始表面的多边型网络，真是可喜可贺可口可乐~~不过现在它这个花花绿绿的样子还有待简化合并下，下一节再整理整理模型的面片合并和模型导出方法。</p>
+<h2 id="参考文献-引用"><a href="#参考文献-引用" class="headerlink" title="参考文献&amp;引用"></a>参考文献&amp;引用</h2><p><span>[1] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/">https://3d.bk.tudelft.nl/liangliang/</a></span><br><span>[2] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html">https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html</a></span><br><span>[3] <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=_0brfDFkIkc">https://www.youtube.com/watch?v=_0brfDFkIkc</a></span><br><span>[4] Linfu X ,Han H ,Qing Z , et al. Combined Rule-Based and Hypothesis-Based Method for Building Model Reconstruction from Photogrammetric Point Clouds [J]. Remote Sensing, 2021, 13 (6): 1107-1107.</span><br><span> [5] Nan L , Wonka P .PolyFit: Polygonal Surface Reconstruction from Point Clouds[C]&#x2F;&#x2F;International Conference on Computer Vision.IEEE, 2017.</span><br>[6]<a target="_blank" rel="noopener" href="https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip">https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip</a><br>[7]<a target="_blank" rel="noopener" href="https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z">https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z</a><br>[8]<a target="_blank" rel="noopener" href="https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip">https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip</a><br>[9]<a target="_blank" rel="noopener" href="https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip">https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip</a><br>[10]<a target="_blank" rel="noopener" href="https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe">https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe</a><br>[11]<a target="_blank" rel="noopener" href="https://zenodo.org/records/4390295#.Y0eIodJBxuV">https://zenodo.org/records/4390295#.Y0eIodJBxuV</a><br>[12]<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/277599635/answer/2149719454">https://www.zhihu.com/question/277599635/answer/2149719454</a><br>[13]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br>[14]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction">https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction</a><br>[15]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/90858099">https://zhuanlan.zhihu.com/p/90858099</a><br>[16]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br>[17]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/HalfedgeDS/index.html">https://doc.cgal.org/latest/HalfedgeDS/index.html</a><br>[18]<a target="_blank" rel="noopener" href="https://segmentfault.com/q/1010000043819426">https://segmentfault.com/q/1010000043819426</a><br>[19]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd">https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd</a><br>[20]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Shape_regularization/index.html">https://doc.cgal.org/latest/Shape_regularization/index.html</a><br>[21]<a target="_blank" rel="noopener" href="https://doi.org/10.3390/rs13061107">https://doi.org/10.3390/rs13061107</a><br>[22]<a target="_blank" rel="noopener" href="https://doi.org/10.1016/j.isprsjprs.2022.09.017">https://doi.org/10.1016/j.isprsjprs.2022.09.017</a><br>[23]<a target="_blank" rel="noopener" href="https://blog.csdn.net/u013279723/article/details/106265948">https://blog.csdn.net/u013279723/article/details/106265948</a><br><font color=#CD5C5C>[24]<a target="_blank" rel="noopener" href="https://www.gurobi.com/resources/mixed-integer-programming-mip-a-primer-on-the-basics/">https://www.gurobi.com/resources/mixed-integer-programming-mip-a-primer-on-the-basics/</a><br>[25]<a target="_blank" rel="noopener" href="https://docs.mosek.com/modeling-cookbook/mio.html">https://docs.mosek.com/modeling-cookbook/mio.html</a><br>[26]<a target="_blank" rel="noopener" href="https://github.com/LiangliangNan/PolyFit/issues/30">https://github.com/LiangliangNan/PolyFit/issues/30</a><br></font></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Sleeping-Ahead
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2025/02/19/PolyFit07/" title="点云三维重建 PolyFit算法解析与改进（七）">http://example.com/2025/02/19/PolyFit07/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
+              <a href="/tags/CGAL/" rel="tag"><i class="fa fa-tag"></i> CGAL</a>
+              <a href="/tags/PolyFit/" rel="tag"><i class="fa fa-tag"></i> PolyFit</a>
+              <a href="/tags/%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E7%BA%BF%E6%80%A7%E8%A7%84%E5%88%92/" rel="tag"><i class="fa fa-tag"></i> 最小二乘线性规划</a>
+              <a href="/tags/%E8%83%BD%E9%87%8F%E5%87%BD%E6%95%B0/" rel="tag"><i class="fa fa-tag"></i> 能量函数</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/01/21/PolyFit06/" rel="prev" title="点云三维重建 PolyFit算法解析与改进（六）">
+      <i class="fa fa-chevron-left"></i> 点云三维重建 PolyFit算法解析与改进（六）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/03/25/PolyFit08/" rel="next" title="点云三维重建 PolyFit算法解析与改进（八）">
+      点云三维重建 PolyFit算法解析与改进（八） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E6%80%A7%E8%A7%84%E5%88%92%E4%B9%8B%E8%83%A1%E8%A8%80%E4%B9%B1%E8%AF%AD"><span class="nav-number">1.</span> <span class="nav-text">线性规划之胡言乱语</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#PolyFit%E7%9A%84%E7%BA%BF%E6%80%A7%E8%A7%84%E5%88%92%E6%9C%AF%E8%AF%AD"><span class="nav-number">1.1.</span> <span class="nav-text">PolyFit的线性规划术语</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%A2%E7%89%87%E6%9C%80%E4%BC%98%E9%87%8D%E5%BB%BA%E7%9A%84%E6%95%B4%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">面片最优重建的整体流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%82%BB%E6%8E%A5%E4%BF%A1%E6%81%AF%E6%8F%90%E5%8F%96"><span class="nav-number">3.</span> <span class="nav-text">邻接信息提取</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E7%BA%A6%E6%9D%9F%E6%9D%A1%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">设置约束条件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E9%A2%9D%E5%A4%96%E7%9A%84%E8%83%BD%E9%87%8F%E9%A1%B9"><span class="nav-number">4.1.</span> <span class="nav-text">设置额外的能量项</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E7%BA%A6%E6%9D%9F%E6%96%B9%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">构建约束方程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%A6%E6%9D%9F%E6%96%B9%E7%A8%8B%E6%B1%82%E8%A7%A3"><span class="nav-number">6.</span> <span class="nav-text">约束方程求解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE-%E5%BC%95%E7%94%A8"><span class="nav-number">7.</span> <span class="nav-text">参考文献&amp;引用</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Sleeping-Ahead"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Sleeping-Ahead</p>
+  <div class="site-description" itemprop="description">主要用途是技术/算法的记录博客哒！<br>偶尔摘抄点杂七杂八的随想~~<br>嘻嘻ԅ(¯﹃¯ԅ)</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Sleeping-ahead" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Sleeping-ahead" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://space.bilibili.com/179235151" title="bilibili → https:&#x2F;&#x2F;space.bilibili.com&#x2F;179235151" rel="noopener" target="_blank"><i class="iconfont icon-bilibili fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sleeping-Ahead</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">107k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">3:15</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("03/01/2023 10:00:00"); //此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒.";
+    }
+setInterval("createtime()",250);
+</script>
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
