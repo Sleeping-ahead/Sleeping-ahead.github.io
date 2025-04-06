@@ -19,18 +19,18 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="摘要：PolyFit优缺点总结；个人近况碎碎念；未来规划。&#x2F;&#x2F;TODO:">
+  <meta name="description" content="摘要：PolyFit优缺点总结；个人近况碎碎念；未来规划。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="点云三维重建 PolyFit算法解析与改进（九）">
+<meta property="og:title" content="点云三维重建 PolyFit算法解析与改进（九） - 完结篇">
 <meta property="og:url" content="http://example.com/2025/03/30/PolyFit09/index.html">
 <meta property="og:site_name" content="前排瞌睡杂物堆">
-<meta property="og:description" content="摘要：PolyFit优缺点总结；个人近况碎碎念；未来规划。&#x2F;&#x2F;TODO:">
+<meta property="og:description" content="摘要：PolyFit优缺点总结；个人近况碎碎念；未来规划。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-03-30T14:28:22.000Z">
-<meta property="article:modified_time" content="2025-03-27T15:12:45.105Z">
+<meta property="article:modified_time" content="2025-04-06T10:23:57.251Z">
 <meta property="article:author" content="Sleeping-Ahead">
 <meta property="article:tag" content="C++">
 <meta property="article:tag" content="CGAL">
@@ -52,7 +52,7 @@
   };
 </script>
 
-  <title>点云三维重建 PolyFit算法解析与改进（九） | 前排瞌睡杂物堆</title>
+  <title>点云三维重建 PolyFit算法解析与改进（九） - 完结篇 | 前排瞌睡杂物堆</title>
   
 
 
@@ -181,7 +181,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          点云三维重建 PolyFit算法解析与改进（九）
+          点云三维重建 PolyFit算法解析与改进（九） - 完结篇
         </h1>
 
         <div class="post-meta">
@@ -198,7 +198,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2025-03-27 23:12:45" itemprop="dateModified" datetime="2025-03-27T23:12:45+08:00">2025-03-27</time>
+                <time title="修改时间：2025-04-06 18:23:57" itemprop="dateModified" datetime="2025-04-06T18:23:57+08:00">2025-04-06</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -223,14 +223,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2k</span>
+              <span>8.6k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
+              <span>16 分钟</span>
             </span>
 
         </div>
@@ -242,11 +242,38 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>摘要：<br>PolyFit优缺点总结；个人近况碎碎念；未来规划。&#x2F;&#x2F;TODO:</p>
+        <p>摘要：<br>PolyFit优缺点总结；个人近况碎碎念；未来规划。</p>
 <span id="more"></span>
 
-
-<h2 id="参考文献-引用"><a href="#参考文献-引用" class="headerlink" title="参考文献&amp;引用"></a>参考文献&amp;引用</h2><p><span>[1] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/">https://3d.bk.tudelft.nl/liangliang/</a></span><br><span>[2] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html">https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html</a></span><br><span>[3] <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=_0brfDFkIkc">https://www.youtube.com/watch?v=_0brfDFkIkc</a></span><br><span>[4] Linfu X ,Han H ,Qing Z , et al. Combined Rule-Based and Hypothesis-Based Method for Building Model Reconstruction from Photogrammetric Point Clouds [J]. Remote Sensing, 2021, 13 (6): 1107-1107.</span><br><span> [5] Nan L , Wonka P .PolyFit: Polygonal Surface Reconstruction from Point Clouds[C]&#x2F;&#x2F;International Conference on Computer Vision.IEEE, 2017.</span><br>[6]<a target="_blank" rel="noopener" href="https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip">https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip</a><br>[7]<a target="_blank" rel="noopener" href="https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z">https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z</a><br>[8]<a target="_blank" rel="noopener" href="https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip">https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip</a><br>[9]<a target="_blank" rel="noopener" href="https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip">https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip</a><br>[10]<a target="_blank" rel="noopener" href="https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe">https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe</a><br>[11]<a target="_blank" rel="noopener" href="https://zenodo.org/records/4390295#.Y0eIodJBxuV">https://zenodo.org/records/4390295#.Y0eIodJBxuV</a><br>[12]<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/277599635/answer/2149719454">https://www.zhihu.com/question/277599635/answer/2149719454</a><br>[13]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br>[14]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction">https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction</a><br>[15]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/90858099">https://zhuanlan.zhihu.com/p/90858099</a><br>[16]<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br>[17]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/HalfedgeDS/index.html">https://doc.cgal.org/latest/HalfedgeDS/index.html</a><br>[18]<a target="_blank" rel="noopener" href="https://segmentfault.com/q/1010000043819426">https://segmentfault.com/q/1010000043819426</a><br>[19]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd">https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd</a><br>[20]<a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Shape_regularization/index.html">https://doc.cgal.org/latest/Shape_regularization/index.html</a><br>[21]<a target="_blank" rel="noopener" href="https://doi.org/10.3390/rs13061107">https://doi.org/10.3390/rs13061107</a><br>[22]<a target="_blank" rel="noopener" href="https://doi.org/10.1016/j.isprsjprs.2022.09.017">https://doi.org/10.1016/j.isprsjprs.2022.09.017</a><br>[23]<a target="_blank" rel="noopener" href="https://blog.csdn.net/u013279723/article/details/106265948">https://blog.csdn.net/u013279723/article/details/106265948</a><br>[24]<a target="_blank" rel="noopener" href="https://www.gurobi.com/resources/mixed-integer-programming-mip-a-primer-on-the-basics/">https://www.gurobi.com/resources/mixed-integer-programming-mip-a-primer-on-the-basics/</a><br>[25]<a target="_blank" rel="noopener" href="https://docs.mosek.com/modeling-cookbook/mio.html">https://docs.mosek.com/modeling-cookbook/mio.html</a><br>[26]<a target="_blank" rel="noopener" href="https://github.com/LiangliangNan/PolyFit/issues/30">https://github.com/LiangliangNan/PolyFit/issues/30</a><br>[27]<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/55162520/merge-adjacent-and-co-planar-faces">https://stackoverflow.com/questions/55162520/merge-adjacent-and-co-planar-faces</a><br><font color=#CD5C5C><br></font></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>那么，拆解建筑点云重建算法Polyfit的整个过程算是走完了，多有疏漏谬误，权当为自动化三维重建领域抛洒一丢丢瓦砾，就此告一段落吧。<br>总结环节。在阅读过的文献中，Polyfit应该是第一位把点云+多边形网络+求解器结合起来的方案，且公开源码供人调用调试，伟大无需多言。PolyFit所做的工作，我是很敬佩的，在它之前，点云到多边形网络的传统思路，大抵是先从局部拟合出多边形对象，然后把重心放到对象之间的闭合、边界对齐优化上。彼时我还在往届师兄师姐的论文中上下求索，思考如何用alpha-shape、高斯平滑之类的算法，来从点云数据中提取出尽可能平整又不丢细节的区域，再一一把它们拼合起来。不出意外的话，那将是一趟充满拟合判定与精度拷问的炼狱之旅。Polyfit的出现无疑是一棵救命稻草，它先列出了区域的所有相交情况，再用一种我看来像是暴力穷举的思路解出最贴合点云的面片组合，从而绕过…或者说是把模型的边界闭合和拟合精度问题给前置了，把这类问题丢给采集和区域聚类部分来解决。而且在这套框架下，哪怕输入的点云有局部缺失，也有希望重建出闭合模型而不必考虑复杂的空洞修复和外轮廓对齐。<br>当然凡事都有两面性，Polyfit也有不少缺点，其中最大问题是候选面集是通过两两相交细分得到的，这种暴力细分会生成过多无效面，在处理大型点云数据时求解器会出现计算瓶颈，作者的论文尾页处也提到该算法只适合做轻量级重建。另一个问题是没法很精确地控制重建区域细节，或者说这是一个很麻烦的过程，因为候选面的保留与否取决于面属性和能量项设置，若要增强模型的某个局部细节，需要格外添加属于该局部面片的属性并修改能量函数，但这也不过是让求解结果更倾向于期望的结果，还是不太可控。这一点换个角度来说也不算坏事，就如作者所言，虽然局部细节不太严格精确，但可以通过调节能量函数的模型复杂度项权重，来控制模型整体的细节程度。</p>
+<h2 id="改进思路"><a href="#改进思路" class="headerlink" title="改进思路"></a>改进思路</h2><p>针对这两个缺点，后来人也打了不少补丁（如文献<sup>[4]</sup>），着眼于增加约束、预先去冗候选面集。不过都到2025这个时点了，还对polyfit感兴趣的我感觉大概能分成两种诉求，请容我多唠叨几句，向同学们分享我的思维。一部分是打算对算法做改进&#x2F;科研&#x2F;创新。我觉得应该把polyfit归到参考文献或精度对比对象那，而非自己二次开发的原型，理由也很简单，polyfit属于老东西了，作者后来又接着有两篇相关的三维重建论文，2023年的City3D<sup>[28]</sup>，它引入了一个新的能量项和两个约束，来鼓励模型有更多的屋顶细节并强化结构的正交关系；2024年10月的PolyGNN，用深度学习的方法对多边形做骨架采样，增强了相邻面片间的拓扑关系<sup>[29]</sup>。搞学术的话，自然应该拿更新的点子来裁缝。创新也是，去站在更高的肩膀上。<br>然后是另一种诉求，期望能做算法落地并压缩运行耗时，这就需要在候选面集的去处冗余那下功夫了。欸，以前有次面试就被问过类似问题，所以关于这一点，除了本程序中的候选靣集简化，我确实还有个不成熟的想法：先用三维格网将点云分块，然后对每个格网的点云进行“空洞修复”，以包围盒6个面的拟合点云把各个块的点云修复成闭合结构，接着开多线程跑所有分块点云的三维重建，最后按原来的空间分布情况，将得到的若干个多边形网络合并起来，大体上是一个总-分-总的优化过程，用分块策略来限制住线性规划的变量数，结合上多线程来压低运行耗时。不过这个想法在实现上会有两个比较难搞的点，一是分块点云的闭合修复要做内外侧判断，免得多边形网络重建到点云外侧，这个问题可能要再套一个前置步骤，用布料模拟滤波CSF提取一个内部的三维轮廓，以它来确定出每个分块的内侧朝向。另一个难点是步骤最后的模型合并，块与块之间的接缝处大概会有轻微的不对齐现象，这下又回到传统重建的边界处理上了，多边形面融合、顶点焊接之类的方法或许能解决一部分错位情况，但暂时是想不出有什么好点子能把错位误差给最小化。<br>那关于PolyFit的个人总结与改进思路就先到这吧，应该也足够未来的自己回顾了。还驻足在此的朋友辛苦了，感谢你捧场这么久，有什么批评或者想讨论的可以下拉放在评论区。不过大多情况我是只看不回的哈哈，这个得看心情和自己当时的水平，我也不想半瓶子晃荡耽误别人。反正评论区你可以当讨论板那样随便用，或许还能有后来人予以援手。(¦3[▓▓]<br>有个特例我专门记一下：上一年8月，一位同学在之前的纯惯导视频那里找到了我的QQ，没有直接打来一个好友申请，而是给我发了封附带代码和请教的邮件。那会我对惯导的加计和陀螺仪很生疏了，但就是很吃这一套，不希望别人的付出白给，花时间重温梳理下代码，尽量帮他分析问题原因，最后也祝他开发顺利。</p>
+<h2 id="近况概述"><a href="#近况概述" class="headerlink" title="近况概述"></a>近况概述</h2><h3 id="生活"><a href="#生活" class="headerlink" title="生活"></a>生活</h3><p>久违的碎碎念环节，好久没这样做近况回顾了。形式上是从生活、情感和未来规划这三个方面做些近况整理，想到哪里就记到哪吧。先来聊聊生活，最大的转变应该是社会身份转变，从学校毕业后出到社会上做一名普普通通的社畜，回到广东从事测绘行业的算法开发工作。一般般也不算太差，至少是实现了本科那会自己的期许，从测绘的本职工作“用”仪器跳到“造”仪器这一条赛道。要说身份转变带来的影响，记得是24年的5月，我忙完了论文答辩，手里也攒出一期PolyFit的解析视频，原计划是一鼓作气花两个月时间把研究的三维重建给整理成视频，作为新的锚点，期待未来的某一时刻在能在别的地方复用，比方说游戏的建筑素材制作，本科毕设做的校园漫游系统之类。后面偷懒了，工作后不想分太多功夫出来做这种闲情逸致的活，毕竟视频录制过程的内容调度、剪辑都很耗费精力，8月底打起气来做了两集，感觉离完结遥遥无期就又开摆了。当然现在录的这个视频纯念稿，像杂谈那样不怎么要画面的协同，做起来还算简单。那后来为了还能贯彻自己[做记录]的道，就把记录形式改为博客，有空就好整以暇地写上两三段，最后也断断续续地把这个坑填上了。<br>说起来自己的作息和读书时没差多少，唉，心态还是有所懈怠了，拖延症upup。好在身体是有注意去保养，每餐午饭都恰个水果补点纤维，也保持着一周到公园跑个四公里的习惯，像上一年就跑了快三百公里，今年继续自律。也和朋友一起逛了些广州附近的景点，像在大型公园散步的白云山、有现场舞狮的佛山祖庙、视听设备多多的中山博物馆，基本都做了份简记，这种一块玩耍的经历值得留恋。影视游戏在这一年也给了我极大的满足感，或者说是享乐欲。少了学术上的压力和焦虑感，有心情去探寻别人创造、发布的美妙作品，而它们同样丰富了我的生活。报下菜名，感谢这些作品在过去一年为我补充或重燃的美好纯真情感：星之梦、无机杀手、星际拓荒、迷宫饭、时空恋旅人、路边野餐、白日梦想家、无职转生、爱的多重奏、败犬女主太多了、献给阿尔吉侬的花束、命运石之门、机器人之梦、料理鼠王。看完或者说重温后狠狠地罪孽共鸣，有种像眼眶微湿和仰望繁星的感受。<br>还有的话，再说点对未来生活的期许吧？希望25年的生活节奏能继续保持平稳，准点下班，多点运动，坚持学习，增长见闻，好好享受。好平淡的愿望，应该很好实现吧嘿嘿。</p>
+<blockquote>
+<p>于特给我举过一个人的例子，他称此人为“海滩人”:一生中有四十年在海滩或游泳池边度过，亲切地和避暑者、有钱的闲人聊天。在数千张度假照片的一角或背景中， 他身穿游泳衣出现在快活的人群中间，但谁也叫不出他的名字，谁也说不清他为何在那儿。也没有人注意到有一天他从照片上消失了。我不敢对于特说，但我相信这个“海滩人”就是我。即使我向他承认这件事，他也不会感到惊奇。于特一再说， 其实我们大家都是“海滩人”，我引述他的原话:“沙子只把我们的脚印保留几秒钟。</p>
+</blockquote>
+<h3 id="情感"><a href="#情感" class="headerlink" title="情感"></a>情感</h3><p>情感部分，我要先整理一段半年左右的网上暗恋经历，尽管有些羞耻，还是要把它写下锚定住，免得未来的迭代重蹈覆辙。和“她”名义上是朋友关系，但整个过程我是抱着友情以上的暧昧状态来和她交流，像是高中时和自己喜欢但不敢表露心意的女生聊天那样。最初是大三时在手游的公屏里被她提到，游戏内断断续续有了些互动，那种被陌生人崇拜的感觉还挺奇妙的。后面读研一学业繁忙，有很长一段时间没玩，到研二发完小论文闲下来又回坑了，心血来潮改了个回忆她的名字。因为这个契机，她在游戏外的平台找到我的联系方式，聊天频繁了一点。刚刚接触的时光总是那么美好，我感谢了她两年前对自己的启迪，一起讨论游戏的资源分配、角色配招，每次聊完都有种血清素释放的快乐。尽管未曾谋面，我还是根据她的言谈想象出一个活泼好动、呆萌爱笑的形象，像是喷射战士里的章鱼娘，对她很有好感。<br>后面又打字聊了一个月，我知晓了一项信息，心生愧疚，决定不往谈恋爱的方向聊，大概率没结果，也不打算再继续和她互动，游戏还是照玩不误。隔了段时间后她找我聊起游戏的攻略，唉，我违背之前的决定，又和她聊了一段时间游戏话题，为了找补理由还预设了一个原因：看能不能建立纯友谊关系，并且尽可能维持。从这个时点开始，我已有违等价交换原则，把对女生美好的幻想与情感，倾注在这段无果的关系中。后面很长一段时间的话题虽仅限游戏内，但我沉醉于这种暧昧的氛围，可以说是乐在其中，也有时候因得不到她的回复而烦闷。理性上我知道不能一直做这种口是心非的行为，但就是不愿冷处理，干脆利落地切断和她的联系。<br>这种内耗停止于研三开学，一年后的不确定性督促我必须得规划世界线的走向，下定决心把精力花在毕业和找实习上，与她有关的事件简记也停在了23年9月。后面和她偶有聊天，但脱敏了没再字斟句酌地写回复，语气也有些自以为是。最后一次的聊天是问她还玩过哪些有意思的游戏。那这就是故事的尾页了。码这部分内容时翻阅往期记录，过去曾有几个契机是适合我去表达心意的，哪怕是鼓起勇气问一句“还处对象吗”，这样无论是加深联系亦或者就此断联，我想都比无疾而终的好朋友关系要好。但我选择了逃避和拖延，公屏上搁那绷着脸装高手，私底下又做作地聊着游戏，贪念着别人的撒娇卖萌，真是窝囊又拧巴啊我。<br>那这份阴暗面差不多裱装好了，忏悔，做一个仪式性的收尾。很感谢她曾在我的人生中出现过，于我而言她饰演“洛琪希”式的角色，打破我安于独处的心态，启迪我去分享内在，像上上年的翻译视频及一些记录，就是以此为动力去制作的。再次感谢我这位熟悉又陌生的网友，祝愿你身体健康，生活幸福。那么，这轮迭代该拿出点真本事了，坦诚交流和释放情感，也放松随和些地和别人聊聊天，在现实里找位乐意互相分享的女朋友，实践爱与成长。</p>
+<p>说起“爱”这一点，工作后时常能回趟家，周末和家里人恰恰饭喝喝茶，偶尔搭把手收拾打扫，也有经济能力参与下家居设备的升级，像组装台式、置换手机，这种默契的关注、付出和温馨感，太舒服了。情感成长这方面，大多是和阿弟一起playgame感悟到的，长久的同心协力感和稳定陪伴，《同舟共济》分工炮塔的炮弹装运和瞄准发射，偶尔也掏出船桨玩一手互殴击晕赛；《铁锤守卫2》选了法师+圣骑士组队，经典的肉盾输出辅医疗组合，从铁锤岛的海盗老巢一路杀到迷雾镇下的无望安息地，最后被墓穴的解谜和迷宫劝退；重温《盐与避难所》，我依旧选择匕首加火枪，后空翻接空中踢枪还是一如既往的爽，阿弟跟攻略用大剑黄金酒。多提几句，一代的合作体验实属舒服有佳，最明显的是以前单人打圣三一BOSS真是双拳难敌六手，要不停翻滚走位来躲牧师的飞弹、战士的劈砍和国王的撩阴腿。双人的压力小多了，拉住其中两位的仇恨后就可以愉快1v1；以及二代的《盐与献祭》也刷了挺久，两名法师杀手在灰溪村和沙漠神殿突突了好多轮；在往后，有款驾驶陆地蟹来跳帮和炮击的Demo，画风可爱挺对胃口；最近的话是打打《雨中冒险2》，也是很爽的一起突突突游戏。</p>
+<p>这么说来，愉快开心的时光也不算少，斗志+20，精力条回满一圈。今年的心态也还不错，保持住。</p>
+<blockquote>
+<p>即使最后的结局是悲剧也不要否定曾经幸福的回忆，那样就是真正意义上的可悲了。</p>
+<p>所有的阴谋都是真的，所有的罪孽都是真的，但最痛苦的是，所有的爱也是真的。</p>
+<p>我们沉迷于游戏，是因为游戏能带给我们某种“精神状态”，这俨然是一种迷狂，这份迷狂又是因为游戏强烈映射出自我的存在，还有什么比自我存在明晰的时刻更叫人愉悦呢？游戏脱离现实的规制下的虚拟，能够让我们追逐那一份规则限制致使我们无法在现实种追逐的理想，一款让你痴迷的游戏，一定是唤起你的某个理想，不论你意识与否，这款游戏已经映射了属于个人的“浪漫”，一份“美”。</p>
+</blockquote>
+<h2 id="未来规划"><a href="#未来规划" class="headerlink" title="未来规划"></a>未来规划</h2><p>最后一part，写一写个人发展的战略规划。现在做的工作和大半年前实习的大差不差，继续负责激光扫描仪的图像处理和多传感器数据融合。参与公司项目的大半年里也拓宽了不少知识面，像全景图像投影、坐标变换、内外参标定、点云后处理这几块都有所沉淀，正常来说继续扒拉扒拉大佬的论文和源码，做好复现和调试，大概下半年就能到“躬行”这第三阶段了。但每当想到未来要在制造业沉浮个很长时间，心中总有点不甘心，倒也说不上讨厌，毕竟工作也是为了赚钱，哪轮得我去抱怨，仅仅是无法把技能知识用到自己感兴趣的游戏影视邻域，比方说场景漫游、VR、精细模型重建这类应用。一位UP主的视频<sup>[30]</sup>中有段话很应景，我引用过来念一下：</p>
+<blockquote>
+<p>“会有人追忆过去的时光，大城市中的田园派也不在少数……有些人生来就是诗人，哲学家或探险家，但大多数人终究被现实的洪流裹挟，被社会筛选，来到一个自己并不热爱的行业。无用武之地的天赋和才能只会徒增痛苦，而孤独感也随之而来。小时候很多人梦想着建功立业或是环游世界，直到随着年龄增长和柴米油盐的平静生活中，梦想沦为泡影。说得中二一点，人们渴望遇到一个旗鼓相当的对手，渴望利用自己的才华解决一个困难的问题。”</p>
+</blockquote>
+<p>所以，如同21年在勘测实习的自己为脱离传统测量而立志那般，我期望两、三年后的自己能积累出足够本领来跳到游戏&#x2F;虚拟仿真行业。即便当下的大环境看起来不咋地，即便前路也未摸索明白，我会相信这是可达的，况且已有所付出，也甘愿为此付出，一如这四年期间划出的那道扁长的圆弧航线。“做记录”这件事也会保持下去，能帮我集中点注意力，减缓知识的遗忘<sup>[31]</sup>，届时B站那边的内容偏生活些，博客这边的偏技术。至于更遥远未来的主线任务，我祝愿自己能在有生之年创造一件令人敬畏的事，诚如《诗篇46的秘密》<sup>[31]</sup>中所说，天地广阔，像一局新开的俄罗斯方块，还有那么多的空白等待着被填上，时机大好。</p>
+<blockquote>
+<p>令人敬畏的事物不需要隐藏，令人敬畏的事物既富有又出手大方。宝藏就在那里。</p>
+<p>使你感动的名字无关紧要，重要的是，你为它而感动。</p>
+<p>不久之后，甚至就在我们的有生之年，会有那么一个游戏设计，如同闪电一般照耀我们的文化。它极易辨识，它有着泉涌般慷慨，有着肆意妄为的发明气魄，充满旺盛的创造力，令人眼花缭乱。学者们会毕其一生，花上数十年，甚至数个世纪来对它进行研究。<br>它会是美妙的，它会是令人战栗的，它会是令人充满敬畏的。</p>
+</blockquote>
+<blockquote>
+<p>Institutional memory and reverse smuggling<br>但也许工程考古学会永远存在下去。我越观察（特别是不把目光局限在几年的范围时）就越发觉到，工程世界就像纽约市的地下。一大堆奇怪的工程奇观在人们的视线外默默哼鸣着，他们的设计者是早已被遗忘的古人，留下的只有残破的地图与原理图。</p>
+</blockquote>
+<p>完结撒花，谢谢你（以及未来的哪个迭代）花时间看到这里ヾ(<em>´▽‘</em>)ﾉ<br>承蒙厚爱，有缘再见。</p>
+<h2 id="参考文献-引用"><a href="#参考文献-引用" class="headerlink" title="参考文献&amp;引用"></a>参考文献&amp;引用</h2><p><span>[1] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/">https://3d.bk.tudelft.nl/liangliang/</a></span><br><span>[2] <a target="_blank" rel="noopener" href="https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html">https://3d.bk.tudelft.nl/liangliang/publications/2017/polyfit/polyfit.html</a></span><br><span>[3] <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=_0brfDFkIkc">https://www.youtube.com/watch?v=_0brfDFkIkc</a></span><br><span>[4] Linfu X ,Han H ,Qing Z , et al. Combined Rule-Based and Hypothesis-Based Method for Building Model Reconstruction from Photogrammetric Point Clouds [J]. Remote Sensing, 2021, 13 (6): 1107-1107.</span><br><span> [5] Nan L , Wonka P .PolyFit: Polygonal Surface Reconstruction from Point Clouds[C]&#x2F;&#x2F;International Conference on Computer Vision.IEEE, 2017.</span><br>[6] <a target="_blank" rel="noopener" href="https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip">https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3-windows-x86_64.zip</a><br>[7] <a target="_blank" rel="noopener" href="https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z">https://boostorg.jfrog.io/artifactory/main/release/1.85.0/source/boost_1_85_0.7z</a><br>[8] <a target="_blank" rel="noopener" href="https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip">https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.zip</a><br>[9] <a target="_blank" rel="noopener" href="https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip">https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip</a><br>[10] <a target="_blank" rel="noopener" href="https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe">https://scipopt.org/download.php?fname=SCIPOptSuite-9.0.0-win64-VS15.exe</a><br>[11] <a target="_blank" rel="noopener" href="https://zenodo.org/records/4390295#.Y0eIodJBxuV">https://zenodo.org/records/4390295#.Y0eIodJBxuV</a><br>[12] <a target="_blank" rel="noopener" href="https://www.zhihu.com/question/277599635/answer/2149719454">https://www.zhihu.com/question/277599635/answer/2149719454</a><br>[13] <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br>[14] <a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction">https://doc.cgal.org/latest/Polygonal_surface_reconstruction/index.html#Chapter_PolygonalSurfaceReconstruction</a><br>[15] <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/90858099">https://zhuanlan.zhihu.com/p/90858099</a><br>[16] <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/668272208">https://zhuanlan.zhihu.com/p/668272208</a><br>[17] <a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/HalfedgeDS/index.html">https://doc.cgal.org/latest/HalfedgeDS/index.html</a><br>[18] <a target="_blank" rel="noopener" href="https://segmentfault.com/q/1010000043819426">https://segmentfault.com/q/1010000043819426</a><br>[19] <a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd">https://doc.cgal.org/latest/BGL/group__PkgBGLEulerOperations.html#gaa386d0cdef3b5d6ef43d6b503392dbcd</a><br>[20] <a target="_blank" rel="noopener" href="https://doc.cgal.org/latest/Shape_regularization/index.html">https://doc.cgal.org/latest/Shape_regularization/index.html</a><br>[21] <a target="_blank" rel="noopener" href="https://doi.org/10.3390/rs13061107">https://doi.org/10.3390/rs13061107</a><br>[22] <a target="_blank" rel="noopener" href="https://doi.org/10.1016/j.isprsjprs.2022.09.017">https://doi.org/10.1016/j.isprsjprs.2022.09.017</a><br>[23] <a target="_blank" rel="noopener" href="https://blog.csdn.net/u013279723/article/details/106265948">https://blog.csdn.net/u013279723/article/details/106265948</a><br>[24] <a target="_blank" rel="noopener" href="https://www.gurobi.com/resources/mixed-integer-programming-mip-a-primer-on-the-basics/">https://www.gurobi.com/resources/mixed-integer-programming-mip-a-primer-on-the-basics/</a><br>[25] <a target="_blank" rel="noopener" href="https://docs.mosek.com/modeling-cookbook/mio.html">https://docs.mosek.com/modeling-cookbook/mio.html</a><br>[26] <a target="_blank" rel="noopener" href="https://github.com/LiangliangNan/PolyFit/issues/30">https://github.com/LiangliangNan/PolyFit/issues/30</a><br>[27] <a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/55162520/merge-adjacent-and-co-planar-faces">https://stackoverflow.com/questions/55162520/merge-adjacent-and-co-planar-faces</a><br><font color=#CD5C5C>[28] Huang J , Stoter J , Peters R ,et al.City3D: Large-Scale Building Reconstruction from Airborne LiDAR Point Clouds[J]. 2022.<br>[29] Chen Z , Shi Y , Nan L ,et al.PolyGNN: Polyhedron-based graph neural network for 3D building reconstruction from point clouds[J].ISPRS Journal of Photogrammetry and Remote Sensing, 2024, 218(PartA):14.<br>[30] <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1T8411t7vs/">https://www.bilibili.com/video/BV1T8411t7vs/</a><br>[31] <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1Nh411h7PV/">https://www.bilibili.com/video/BV1Nh411h7PV/</a><br>[32] <a target="_blank" rel="noopener" href="https://www.zhihu.com/question/607622786/answer/34064346132">https://www.zhihu.com/question/607622786/answer/34064346132</a><br></font></p>
 
     </div>
 
@@ -262,7 +289,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2025/03/30/PolyFit09/" title="点云三维重建 PolyFit算法解析与改进（九）">http://example.com/2025/03/30/PolyFit09/</a>
+    <a href="http://example.com/2025/03/30/PolyFit09/" title="点云三维重建 PolyFit算法解析与改进（九） - 完结篇">http://example.com/2025/03/30/PolyFit09/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -349,7 +376,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE-%E5%BC%95%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">参考文献&amp;引用</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E8%BF%9B%E6%80%9D%E8%B7%AF"><span class="nav-number">2.</span> <span class="nav-text">改进思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%91%E5%86%B5%E6%A6%82%E8%BF%B0"><span class="nav-number">3.</span> <span class="nav-text">近况概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%B4%BB"><span class="nav-number">3.1.</span> <span class="nav-text">生活</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%83%85%E6%84%9F"><span class="nav-number">3.2.</span> <span class="nav-text">情感</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AA%E6%9D%A5%E8%A7%84%E5%88%92"><span class="nav-number">4.</span> <span class="nav-text">未来规划</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE-%E5%BC%95%E7%94%A8"><span class="nav-number">5.</span> <span class="nav-text">参考文献&amp;引用</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -421,13 +448,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">116k</span>
+    <span title="站点总字数">123k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:31</span>
+    <span title="站点阅读时长">3:43</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
