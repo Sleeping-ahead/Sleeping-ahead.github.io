@@ -22,18 +22,26 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="别急，就当简介来写。不，整理下还能大致忆起的节点到这个页面。 不急，慢慢整理，，， 阿巴阿巴，待补充，，，">
+  <meta name="description" content=".img-comparison-slider {   position: relative;   width: 100%;   max-width: 600px;   margin: 20px auto; }  .img-container {   position: relative;   overflow: hidden;   border-radius: 8px; }  .img-bef">
 <meta property="og:type" content="website">
 <meta property="og:title" content="个人介绍">
 <meta property="og:url" content="http://example.com/about/index.html">
 <meta property="og:site_name" content="前排瞌睡杂物堆">
-<meta property="og:description" content="别急，就当简介来写。不，整理下还能大致忆起的节点到这个页面。 不急，慢慢整理，，， 阿巴阿巴，待补充，，，">
+<meta property="og:description" content=".img-comparison-slider {   position: relative;   width: 100%;   max-width: 600px;   margin: 20px auto; }  .img-container {   position: relative;   overflow: hidden;   border-radius: 8px; }  .img-bef">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/about/$%7BbeforeImg%7D">
+<meta property="og:image" content="http://example.com/about/$%7BafterImg%7D">
+<meta property="og:image" content="http://example.com/about/%E6%9C%AC%E7%A7%91%E6%AF%95%E4%B8%9A%E8%AE%BE%E8%AE%A101.png">
+<meta property="og:image" content="http://example.com/about/%E6%9C%AC%E7%A7%91%E6%AF%95%E4%B8%9A%E8%AE%BE%E8%AE%A102.png">
+<meta property="og:image" content="http://example.com/about/%E6%9C%AC%E7%A7%91%E6%AF%95%E4%B8%9A%E8%AE%BE%E8%AE%A103.png">
+<meta property="og:image" content="http://example.com/about/%E6%AD%BB%E7%AA%81%E5%90%8C%E4%BA%BA.gif">
+<meta property="og:image" content="http://example.com/about/%E5%B0%8F%E8%AE%BA%E6%96%87.png">
 <meta property="article:published_time" content="2024-10-29T15:20:58.000Z">
-<meta property="article:modified_time" content="2024-11-03T15:03:27.097Z">
+<meta property="article:modified_time" content="2025-07-16T13:07:41.953Z">
 <meta property="article:author" content="Sleeping-Ahead">
 <meta property="article:tag" content="Cpp,点云,鱼眼图像,算法">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/about/$%7BbeforeImg%7D">
 
 <link rel="canonical" href="http://example.com/about/">
 
@@ -183,9 +191,222 @@
       
       
       <div class="post-body">
-          <p>别急，就当简介来写。不，整理下还能大致忆起的节点到这个页面。</p>
-<p>不急，慢慢整理，，，</p>
-<p>阿巴阿巴，待补充，，，</p>
+          <!--滑动图片对比代码-->
+<style>
+.img-comparison-slider {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+.img-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.img-before, .img-after {
+  width: 100%;
+  height: auto;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.img-before {
+  position: relative;
+  z-index: 1;
+}
+
+.img-after {
+  z-index: 2;
+}
+
+.img-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  border-right: 3px solid #fff;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+  z-index: 3;
+}
+
+.slider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: ew-resize;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  z-index: 4;
+}
+
+.slider-handle::before,
+.slider-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  background: #666;
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.slider-handle::before {
+  left: 12px;
+}
+
+.slider-handle::after {
+  right: 12px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 创建滑动图片对比的函数
+  function createImageComparison(containerId, beforeImg, afterImg) {
+    // 创建HTML结构
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = `
+      <div class="img-container">
+        <img src="${beforeImg}" class="img-before" alt="Before">
+        <img src="${afterImg}" class="img-after" alt="After">
+        <div class="img-overlay"></div>
+        <div class="slider-handle"></div>
+      </div>
+    `;
+    
+    // 获取元素
+    const overlay = container.querySelector('.img-overlay');
+    const handle = container.querySelector('.slider-handle');
+    const afterImgEl = container.querySelector('.img-after');
+    
+    // 设置初始状态
+    afterImgEl.style.clipPath = `inset(0 ${100 - 50}% 0 0)`;
+    
+    let isDragging = false;
+    
+    function updateSlider(x) {
+      const rect = container.getBoundingClientRect();
+      const pos = Math.max(0, Math.min(x - rect.left, rect.width));
+      const percentage = (pos / rect.width) * 100;
+      
+      overlay.style.width = percentage + '%';
+      handle.style.left = percentage + '%';
+      
+      // 使用 clip-path 来控制 after 图片的可见部分
+      afterImgEl.style.clipPath = `inset(0 ${100 - percentage}% 0 0)`;
+    }
+    
+    handle.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        updateSlider(e.clientX);
+      }
+    });
+    
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+    
+    // 触摸设备支持
+    handle.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      e.preventDefault();
+    });
+    
+    document.addEventListener('touchmove', (e) => {
+      if (isDragging) {
+        updateSlider(e.touches[0].clientX);
+      }
+    });
+    
+    document.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+  }
+  
+  // 初始化页面上所有的滑动图片对比
+  const sliders = document.querySelectorAll('.img-comparison-slider');
+  sliders.forEach(slider => {
+    const id = slider.id;
+    const beforeImg = slider.getAttribute('data-before');
+    const afterImg = slider.getAttribute('data-after');
+    if (id && beforeImg && afterImg) {
+      createImageComparison(id, beforeImg, afterImg);
+    }
+  });
+});
+</script>
+
+<!--正文-->
+
+<p>别急，就当简历的项目经历来写，偏项目、技能方面，毕竟要展示给别人看。也不尽然，就尽量搜罗下还能记起的节点，整理到这个页面。<br>过眼云烟，回首又度一年秋。</p>
+<h1 id="2018-2019"><a href="#2018-2019" class="headerlink" title="2018-2019"></a>2018-2019</h1><p>2017.09，就读于湖南科技大学测绘工程专业，攻读学士学位。<br>2017.10，湖科大校运会志愿服务，评先进工作者。<br>2018.05-2019.05，任学院心理健康部副部，更新网页内容、组织情景剧表演。<br>2019.03-2019.06，学校外业实践:湘潭锰矿公园的GPS静态测量。布设GPS接收机，HGO解算基线、网平差。<br>2019.06，湖科大北校区数字测图，布设碎部点、Cass绘制地物。<br>2019.10，“中海达杯”测绘综合竞赛，程序设计项目一等奖（院级）。<br>2019.12，湖南省第二届大学生测绘综合技能竞赛，测量程序设计一等奖（省级）。</p>
+<h1 id="2020-2021"><a href="#2020-2021" class="headerlink" title="2020-2021"></a>2020-2021</h1><p>2020.01-2020.? 疫情期间居家学习，地籍学挂科补考。<br>2020.07-2020.12 备考中南大学，总分325差20未进复试，思政73、英一56、数一82、误差理论与测量平差基础114。man，what can i say. 跟脚不够，年轻太气盛。<br>2021.01-2021.04 调剂进河南理工大学。感慨至少还有个学上，冲着能学两手激光扫描技术去的。<br>2021.02-2021.06 毕业设计《基于C#和Unity3D的虚拟校园导览系统设计与实现》，3dsMax建模南校区场景、建筑物，Unity3D设计漫游导航系统。<br><img src="./本科毕业设计01.png" alt="" title=""><br><img src="./本科毕业设计02.png" alt="" title=""><br><img src="./本科毕业设计03.png" alt="" title=""></p>
+<p>2021.06-2021.07 实习于广东置信勘测规划信息工程有限公司，质检员。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">相关记录: https:<span class="comment">//www.bilibili.com/read/readlist/rl430508</span></span><br><span class="line">项目：中山市坦洲镇七村改造区的房屋一体化测量。</span><br><span class="line">工作内容:</span><br><span class="line"><span class="number">1</span>、房屋一体化测量。复测作业区村舍、房屋结构（主体、阳台、飘楼、外梯等）的尺寸，绘制草图。</span><br><span class="line"><span class="number">2</span>、统计外业组的测量数据，标记超出限差的边长。计算房屋点间距精度，撰写质量评价表。</span><br><span class="line"><span class="number">3</span>、Cass软件修改外业组的房屋平面CAD图，标出原图的超限边长和错分、漏分的房屋部分。</span><br></pre></td></tr></table></figure>
+
+<p>2021.09 就读于河南理工大学测绘科学与技术专业，攻读硕士学位。（时年7月郑州特大暴雨）<br>2021.10-2021.12 厂房变形监测内业处理，用CloudCompare分离、标记煤厂房点云的主钢架结构。</p>
+<h1 id="2022"><a href="#2022" class="headerlink" title="2022"></a>2022</h1><p>2022.01-2022.02 和阿弟共同制作Unity同人小游戏《死亡突围X像素鸟》，自娱自乐。<br><img src="./死突同人.gif" alt="" title=""></p>
+<p>2022.05-2023.03 撰写《基于车载LiDAR点云的路边地上物多阶段聚类分割算法》，见刊于地理与地理信息科学，属CSCD核心库。感谢导师栽培。<br><img src="./小论文.png" alt="" title=""></p>
+<p>2022.10-2023.03 开发高精地图数据转换工具，表示路灯、树木、道路线的矢量数据转换为.xodr格式的opendrive文件。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">C++实现，算道路坐标系下节点间的距离、方位角、曲率。</span><br><span class="line">在opendrive规范下生成line类型的双向车道和arc类型的弯道、路口。</span><br></pre></td></tr></table></figure>
+<div id="comparison01" class="img-comparison-slider" data-before="./高精地图数据转换01.png" data-after="./高精地图数据转换02.png"></div>
+
+
+<h1 id="2023"><a href="#2023" class="headerlink" title="2023"></a>2023</h1><p>2023.02-2023.05 配置、运行PVIO程序，初识Ubuntu。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">相关记录：https:<span class="comment">//www.bilibili.com/opus/786285723282046997</span></span><br></pre></td></tr></table></figure>
+<p>2023.06-2023.11 了解City3D，运行PolyFit点云三维重建程序，思考改进方向。<br>2023.11-2024.02 实习于南方测绘广州分公司，算法实习生。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">相关记录：</span><br><span class="line">项目：手持扫描仪Escan的全景相机功能开发。</span><br><span class="line">工作内容：</span><br><span class="line"><span class="number">1</span>、惯导单元间的旋转标定，基于罗德里格斯旋转公式配准两者间的加速度，</span><br><span class="line"><span class="number">2</span>、手持扫描仪Escan20点云赋真彩色信息。包括：影石X3全景相机采集全景图，相机外参标定、坐标变换、点与图像匹配。</span><br></pre></td></tr></table></figure>
+
+<p>2024.03-2024.06 毕业论文《》，&#x2F;&#x2F;TODO:下一次修改位置</p>
+<h1 id="2024"><a href="#2024" class="headerlink" title="2024"></a>2024</h1><!--
+<div id="comparison02" class="img-comparison-slider" data-before="./image-before.png" data-after="./image-after.png"></div>
+-->
+
+<p>2024.06 入职南方测绘广州分公司，任算法工程师（头衔仍为“算法工程师”）。<br>2024.07-2024.08 调整赋色逻辑为按时间匹配点与图像。<br>2024.09-</p>
+<h1 id="2025"><a href="#2025" class="headerlink" title="2025"></a>2025</h1><p>2025.02-</p>
+<p>&#x2F;&#x2F;TODO:待整理</p>
+<div id="comparison11" class="img-comparison-slider" data-before="./高密度01_前.png" data-after="./高密度01_后.png"></div>
+
+<div id="comparison12" class="img-comparison-slider" data-before="./高密度02_前.png" data-after="./高密度02_后.png"></div>
+
+<!--室外的效果不明显，以后再演示-->
+<div id="comparison13" class="img-comparison-slider" data-before="./nid优化_室外_前.png" data-after="./nid优化_室外_后.png"></div>
+
+<div id="comparison14" class="img-comparison-slider" data-before="./nid优化_室内_前.png" data-after="./nid优化_室内_后.png"></div>
+
+<p>——————————————</p>
+<h1 id="next-time"><a href="#next-time" class="headerlink" title="next time"></a>next time</h1><p>阿巴阿巴，待补充，，，</p>
+<!--
+# TODO:整理
+
+
+2023.4-2023.6 SLAM生成惯导系统的轨迹线。
+2023.5-至今 撰写建筑物点云三维模型重建的论文。
+
+关于三维点云数据的提取研究。使用C++和PCL库，对含有道路两侧地物的点云数据，实现聚类分割效果。
+
+关于三维场景构建。基于卫星遥感影像及数字测图得到的CAD图纸，使用3dMax创建建筑物模型，导入unity中构建校园漫游场景。
+
+-->
 
       </div>
       
@@ -247,6 +468,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#2018-2019"><span class="nav-number">1.</span> <span class="nav-text">2018-2019</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2020-2021"><span class="nav-number">2.</span> <span class="nav-text">2020-2021</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2022"><span class="nav-number">3.</span> <span class="nav-text">2022</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2023"><span class="nav-number">4.</span> <span class="nav-text">2023</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2024"><span class="nav-number">5.</span> <span class="nav-text">2024</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2025"><span class="nav-number">6.</span> <span class="nav-text">2025</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#next-time"><span class="nav-number">7.</span> <span class="nav-text">next time</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -324,7 +546,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">3:48</span>
+    <span title="站点阅读时长">3:50</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
   </div>
