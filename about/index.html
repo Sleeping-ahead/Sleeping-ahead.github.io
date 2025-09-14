@@ -36,8 +36,19 @@
 <meta property="og:image" content="http://example.com/about/%E6%9C%AC%E7%A7%91%E6%AF%95%E4%B8%9A%E8%AE%BE%E8%AE%A103.png">
 <meta property="og:image" content="http://example.com/about/%E6%AD%BB%E7%AA%81%E5%90%8C%E4%BA%BA.gif">
 <meta property="og:image" content="http://example.com/about/%E5%B0%8F%E8%AE%BA%E6%96%87.png">
+<meta property="og:image" content="http://example.com/about/%E5%8A%A0%E9%80%9F%E5%BA%A6%E5%BD%92%E4%B8%80%E5%8F%AF%E8%A7%86%E5%8C%96.png">
+<meta property="og:image" content="http://example.com/about/%E8%B5%8B%E8%89%B2%E6%A0%B8%E5%BF%83%E9%80%BB%E8%BE%91.png">
+<meta property="og:image" content="http://example.com/about/%E8%B5%8B%E8%89%B2%E6%A1%86%E6%9E%B6%E6%B5%81%E7%A8%8B%E5%9B%BE.png">
+<meta property="og:image" content="http://example.com/about/%E6%89%8B%E7%9C%BC%E6%A0%87%E5%AE%9A.png">
+<meta property="og:image" content="http://example.com/about/%E7%82%B9%E4%BA%91PolyFIt%E4%B8%89%E7%BB%B4%E9%87%8D%E5%BB%BA.gif">
+<meta property="og:image" content="http://example.com/about/%E5%8D%95%E9%B1%BC%E7%9C%BC%E9%9D%99%E6%80%81%E8%B5%8B%E8%89%B2%E5%8F%AF%E8%A1%8C%E6%80%A7%E9%AA%8C%E8%AF%81.png">
+<meta property="og:image" content="http://example.com/about/%E5%90%8C%E6%AD%A5%E6%B5%8F%E8%A7%88%E6%BC%94%E7%A4%BA01.png">
+<meta property="og:image" content="http://example.com/about/%E5%90%8C%E6%AD%A5%E6%B5%8F%E8%A7%88%E6%BC%94%E7%A4%BA02.png">
+<meta property="og:image" content="http://example.com/about/OpenMVG%E5%9C%A8%E9%80%80%E5%8C%96%E7%8E%AF%E5%A2%83%E4%BA%A7%E7%94%9F%E9%94%99%E8%AF%AFpose.png">
+<meta property="og:image" content="http://example.com/about/DVLC_%E5%9B%BE%E5%83%8F%E7%82%B9%E4%BA%91%E5%8F%A0%E5%8A%A0%E6%98%BE%E7%A4%BA.png">
+<meta property="og:image" content="http://example.com/about/%E6%A2%AF%E5%BA%A6%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84%E4%BD%8D%E5%A7%BF%E4%BC%98%E5%8C%96%E8%BF%87%E7%A8%8B.gif">
 <meta property="article:published_time" content="2024-10-29T15:20:58.000Z">
-<meta property="article:modified_time" content="2025-07-16T13:07:41.953Z">
+<meta property="article:modified_time" content="2025-09-14T15:11:36.676Z">
 <meta property="article:author" content="Sleeping-Ahead">
 <meta property="article:tag" content="Cpp,点云,鱼眼图像,算法">
 <meta name="twitter:card" content="summary">
@@ -269,17 +280,28 @@
 .slider-handle::after {
   right: 12px;
 }
+
+/*标题样式*/
+.img-comparison-title {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
+  /*font-style: italic;*/
+  line-height: 1.4;
+}
+
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // 创建滑动图片对比的函数
-  function createImageComparison(containerId, beforeImg, afterImg) {
+  function createImageComparison(containerId, beforeImg, afterImg, title) {
     // 创建HTML结构
     const container = document.getElementById(containerId);
     if (!container) return;
     
-    container.innerHTML = `
+    let htmlContent = `
       <div class="img-container">
         <img src="${beforeImg}" class="img-before" alt="Before">
         <img src="${afterImg}" class="img-after" alt="After">
@@ -287,6 +309,13 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="slider-handle"></div>
       </div>
     `;
+    
+    // 如果有标题，添加标题元素
+    if (title) {
+      htmlContent += `<div class="img-comparison-title">${title}</div>`;
+    }
+    
+    container.innerHTML = htmlContent;
     
     // 获取元素
     const overlay = container.querySelector('.img-overlay');
@@ -348,8 +377,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const id = slider.id;
     const beforeImg = slider.getAttribute('data-before');
     const afterImg = slider.getAttribute('data-after');
+    const title = slider.getAttribute('data-title');//获取标题
     if (id && beforeImg && afterImg) {
-      createImageComparison(id, beforeImg, afterImg);
+      createImageComparison(id, beforeImg, afterImg, title);
     }
   });
 });
@@ -357,56 +387,200 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!--正文-->
 
-<p>别急，就当简历的项目经历来写，偏项目、技能方面，毕竟要展示给别人看。也不尽然，就尽量搜罗下还能记起的节点，整理到这个页面。<br>过眼云烟，回首又度一年秋。</p>
+<p>别急，就当简历的项目经历来写，偏项目、技能方面，毕竟要展示给别人看。<br>也不尽然，就尽量搜罗下还能记起的节点，整理到这个页面。<br>过眼云烟，回首又度一年秋。</p>
 <h1 id="2018-2019"><a href="#2018-2019" class="headerlink" title="2018-2019"></a>2018-2019</h1><p>2017.09，就读于湖南科技大学测绘工程专业，攻读学士学位。<br>2017.10，湖科大校运会志愿服务，评先进工作者。<br>2018.05-2019.05，任学院心理健康部副部，更新网页内容、组织情景剧表演。<br>2019.03-2019.06，学校外业实践:湘潭锰矿公园的GPS静态测量。布设GPS接收机，HGO解算基线、网平差。<br>2019.06，湖科大北校区数字测图，布设碎部点、Cass绘制地物。<br>2019.10，“中海达杯”测绘综合竞赛，程序设计项目一等奖（院级）。<br>2019.12，湖南省第二届大学生测绘综合技能竞赛，测量程序设计一等奖（省级）。</p>
-<h1 id="2020-2021"><a href="#2020-2021" class="headerlink" title="2020-2021"></a>2020-2021</h1><p>2020.01-2020.? 疫情期间居家学习，地籍学挂科补考。<br>2020.07-2020.12 备考中南大学，总分325差20未进复试，思政73、英一56、数一82、误差理论与测量平差基础114。man，what can i say. 跟脚不够，年轻太气盛。<br>2021.01-2021.04 调剂进河南理工大学。感慨至少还有个学上，冲着能学两手激光扫描技术去的。<br>2021.02-2021.06 毕业设计《基于C#和Unity3D的虚拟校园导览系统设计与实现》，3dsMax建模南校区场景、建筑物，Unity3D设计漫游导航系统。<br><img src="./本科毕业设计01.png" alt="" title=""><br><img src="./本科毕业设计02.png" alt="" title=""><br><img src="./本科毕业设计03.png" alt="" title=""></p>
+<h1 id="2020-2021"><a href="#2020-2021" class="headerlink" title="2020-2021"></a>2020-2021</h1><p>2020.01-2020.? 疫情期间居家学习，地籍学挂科补考。<br>2020.07-2020.12 备考中南大学，总分325差20未进复试，思政73、英一56、数一82、误差理论与测量平差基础114。man，what can i say. 跟脚不够，年轻太气盛。<br>2021.01-2021.04 调剂进河南理工大学。感慨至少还有个学上，冲着能学两手激光扫描技术去的。<br>2021.02-2021.06 本科毕业设计《基于C#和Unity3D的虚拟校园导览系统设计与实现》，基于卫星遥感影像及数字测图的CAD图纸，通过3dsMax建模南校区场景、建筑物，Unity3D设计漫游导航系统。<br><img src="./本科毕业设计01.png" style="width:80%; height:auto;" alt="" title=""></p>
+<div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+<img src="./本科毕业设计02.png" style="width:48%; height:auto;" alt="" title="">
+<img src="./本科毕业设计03.png" style="width:48%; height:auto;" alt="" title="">
+</div>
+
 <p>2021.06-2021.07 实习于广东置信勘测规划信息工程有限公司，质检员。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">相关记录: https:<span class="comment">//www.bilibili.com/read/readlist/rl430508</span></span><br><span class="line">项目：中山市坦洲镇七村改造区的房屋一体化测量。</span><br><span class="line">工作内容:</span><br><span class="line"><span class="number">1</span>、房屋一体化测量。复测作业区村舍、房屋结构（主体、阳台、飘楼、外梯等）的尺寸，绘制草图。</span><br><span class="line"><span class="number">2</span>、统计外业组的测量数据，标记超出限差的边长。计算房屋点间距精度，撰写质量评价表。</span><br><span class="line"><span class="number">3</span>、Cass软件修改外业组的房屋平面CAD图，标出原图的超限边长和错分、漏分的房屋部分。</span><br></pre></td></tr></table></figure>
-
+<blockquote>
+<p>相关记录: <a target="_blank" rel="noopener" href="https://www.bilibili.com/read/readlist/rl430508">https://www.bilibili.com/read/readlist/rl430508</a><br>项目：中山市坦洲镇七村改造区的房屋一体化测量。<br>工作内容:<br>1、房屋一体化测量。复测作业区村舍、房屋的结构（主体、阳台、飘楼、外梯等）尺寸，绘制草图。<br>2、统计外业组的测量数据，标记超出限差的边长。计算房屋点间距精度，撰写质量评价表。<br>3、Cass软件修改外业组的房屋平面CAD图，标出原图的超限边长和错分、漏分的房屋部分。</p>
+</blockquote>
 <p>2021.09 就读于河南理工大学测绘科学与技术专业，攻读硕士学位。（时年7月郑州特大暴雨）<br>2021.10-2021.12 厂房变形监测内业处理，用CloudCompare分离、标记煤厂房点云的主钢架结构。</p>
-<h1 id="2022"><a href="#2022" class="headerlink" title="2022"></a>2022</h1><p>2022.01-2022.02 和阿弟共同制作Unity同人小游戏《死亡突围X像素鸟》，自娱自乐。<br><img src="./死突同人.gif" alt="" title=""></p>
-<p>2022.05-2023.03 撰写《基于车载LiDAR点云的路边地上物多阶段聚类分割算法》，见刊于地理与地理信息科学，属CSCD核心库。感谢导师栽培。<br><img src="./小论文.png" alt="" title=""></p>
-<p>2022.10-2023.03 开发高精地图数据转换工具，表示路灯、树木、道路线的矢量数据转换为.xodr格式的opendrive文件。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">C++实现，算道路坐标系下节点间的距离、方位角、曲率。</span><br><span class="line">在opendrive规范下生成line类型的双向车道和arc类型的弯道、路口。</span><br></pre></td></tr></table></figure>
-<div id="comparison01" class="img-comparison-slider" data-before="./高精地图数据转换01.png" data-after="./高精地图数据转换02.png"></div>
+<h1 id="2022"><a href="#2022" class="headerlink" title="2022"></a>2022</h1><p>2022.01-2022.02 和阿弟共同制作Unity3D同人小游戏《死亡突围X像素鸟》，自娱自乐性质，粗略了解一种游戏开发流程。<br><img src="./死突同人.gif" alt="" title=""></p>
+<p>2022.05-2023.03 撰写《基于车载LiDAR点云的路边地上物多阶段聚类分割算法》，见刊于《地理与地理信息科学》，属CSCD核心库。感谢导师栽培ԅ(¯﹃¯ԅ)<br><img src="./小论文.png" style="width:80%; height:auto;" alt="" title=""></p>
+<p>2022.10-2023.03 开发高精地图数据转换工具，将表示路灯、树木、道路线的矢量数据转换为.xodr格式的opendrive文件。</p>
+<blockquote>
+<p>工作内容：C++实现，计算道路坐标系下节点间的距离、方位角、曲率。<br>在opendrive规范下生成line类型的双向车道和arc类型的弯道、路口。</p>
+</blockquote>
+<div id="comparison01" class="img-comparison-slider" data-before="./高精地图数据转换_前.png" data-after="./高精地图数据转换_后.png"></div>
+
+<h1 id="2023"><a href="#2023" class="headerlink" title="2023"></a>2023</h1><p>2023.02-2023.05 配置、运行PVIO程序，初识Ubuntu系统及命令行操作。</p>
+<blockquote>
+<p>相关记录：<a target="_blank" rel="noopener" href="https://www.bilibili.com/opus/786285723282046997">https://www.bilibili.com/opus/786285723282046997</a></p>
+</blockquote>
+<p>2023.06-2023.11 了解City3D算法，运行CGAL库中开源的PolyFit点云三维重建算法。<br>2023.11-2024.02 实习于南方测绘广州分公司，任图像处理组的算法实习生。</p>
+<blockquote>
+<p>相关记录：<a target="_blank" rel="noopener" href="https://www.bilibili.com/opus/909339671460315161">https://www.bilibili.com/opus/909339671460315161</a><br>项目：手持扫描仪Escan的全景相机功能开发。<br>工作内容：<br>（1）惯导单元的旋转标定。按时间戳筛选、对齐加速度对，累加为整体的旋转关系，SVD分解出传感器间的旋转外参。</p>
+</blockquote>
+<img src="./加速度归一可视化.png" style="width:80%; height:auto;" alt="" title="">
+
+<blockquote>
+<p>（2）搭建点云赋色框架。框架整体流程：影石X3相机采集、拼接符合等距圆柱形投影的全景图；雷达-&gt;相机外参标定（静态标定精度4cm）；直角-&gt;球面-&gt;像素坐标系变换；点与图像匹配（掩膜剔除、深度缓冲分析）。框架缺点：图像不参与位姿优化，pose全依赖时间软同步+slam解算，动态赋色精度4cm（室内）-15cm（室外）。</p>
+</blockquote>
+<div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+<img src="./赋色核心逻辑.png" style="width:64%; height:auto;" alt="赋色核心逻辑" title="赋色核心逻辑">
+<img src="./赋色框架流程图.png" style="width:32%; height:auto;" alt="赋色框架流程图" title="赋色框架流程图">
+</div>
+<div id="comparison02" class="img-comparison-slider" data-before="./初版赋色精度_强度.png" data-after="./初版赋色精度_颜色.png" data-title="真彩色点云_初版"></div>
+
+<blockquote>
+<p>(3)手眼标定思路的雷达-相机外参标定框架。将静止状态下的雷达点、全景图映射到球面，对点云做6DOF的平移旋转微调，再目视检查强度与颜色的对齐情况来确定外参RT。缺陷：微调顺序严格且繁琐；由于点云映射到球面上丢失深度信息，仅能矫正旋转平移量有误差。<br>后放弃手眼思路改为pnp匹配点思路，由于仍以球面数据为输入，仍存在上述缺陷。</p>
+</blockquote>
+<img src="./手眼标定.png" style="width:80%; height:auto;" alt="" title="">
 
 
-<h1 id="2023"><a href="#2023" class="headerlink" title="2023"></a>2023</h1><p>2023.02-2023.05 配置、运行PVIO程序，初识Ubuntu。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">相关记录：https:<span class="comment">//www.bilibili.com/opus/786285723282046997</span></span><br></pre></td></tr></table></figure>
-<p>2023.06-2023.11 了解City3D，运行PolyFit点云三维重建程序，思考改进方向。<br>2023.11-2024.02 实习于南方测绘广州分公司，算法实习生。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">相关记录：</span><br><span class="line">项目：手持扫描仪Escan的全景相机功能开发。</span><br><span class="line">工作内容：</span><br><span class="line"><span class="number">1</span>、惯导单元间的旋转标定，基于罗德里格斯旋转公式配准两者间的加速度，</span><br><span class="line"><span class="number">2</span>、手持扫描仪Escan20点云赋真彩色信息。包括：影石X3全景相机采集全景图，相机外参标定、坐标变换、点与图像匹配。</span><br></pre></td></tr></table></figure>
+<h1 id="2024"><a href="#2024" class="headerlink" title="2024"></a>2024</h1><p>2024.03-2024.06 毕业论文《联合机载与车载LiDAR点云的建筑物一体化三维重建》。在PolyFit框架（点云聚类；平面拟合、相交细分；闭合模型约束、能量函数最小化）的基础上，添加预处理过程和一个屋顶偏好能量项：前者填充建筑底部以提高点云完整性，后者引导求解结果为顶面结构更丰富的面集组合。</p>
+<blockquote>
+<p>相关记录：<a target="_blank" rel="noopener" href="https://sleeping-ahead.github.io/categories/%E7%82%B9%E4%BA%91%E4%B8%89%E7%BB%B4%E9%87%8D%E5%BB%BA/">点云三维重建 PolyFit算法解析与改进</a></p>
+</blockquote>
+<img src="./点云PolyFIt三维重建.gif" style="width:80%; height:auto;" alt="点云PolyFIt三维重建过程" title="点云PolyFIt三维重建过程">
 
-<p>2024.03-2024.06 毕业论文《》，&#x2F;&#x2F;TODO:下一次修改位置</p>
-<h1 id="2024"><a href="#2024" class="headerlink" title="2024"></a>2024</h1><!--
-<div id="comparison02" class="img-comparison-slider" data-before="./image-before.png" data-after="./image-after.png"></div>
--->
+<p>2024.06 入职南方测绘广州分公司，任算法工程师，负责赋色、标定工作。（刚回来曾经带我的算法、软件同事基本溜溜球，中道崩殂了属于是。想你了kiwi）<br>2024.07 调整赋色模块的匹配逻辑：按最近时序匹配点云帧与图像帧；打包第一版的相机-雷达外参矩阵标定程序。<br>2024.08-2024.10 1、研究内置双鱼眼图像拼接方案；以外参偏移相机光心仅能稍微减轻视差（重叠区重影现象明显），加权平均融合后图像拼缝处仍有重影。</p>
+<blockquote>
+<p>测试方案：<br>（1）Matlab的Camera Calibrator可做单目鱼眼标定，但只适用视场角150°以下的鱼眼镜头，一定夹角的双目标定无法对齐重叠区细节。Scaramuzza工具箱算出的基线长度及相机光轴间夹角有误差。<br>（2）OpenCV::fisheye模块不适用于矫正超过180°视场角的鱼眼图像，参考：<br><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/48990136/opencv-undistorts-only-a-central-part-of-fisheye-image/53500352#53500352">https://stackoverflow.com/questions/48990136/opencv-undistorts-only-a-central-part-of-fisheye-image/53500352#53500352</a><br><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/34316306/opencv-fisheye-calibration-cuts-too-much-of-the-resulting-image#:~:text=I%20am%20using%20OpenCV%20to%20calibrate%20images">https://stackoverflow.com/questions/34316306/opencv-fisheye-calibration-cuts-too-much-of-the-resulting-image#:~:text=I%20am%20using%20OpenCV%20to%20calibrate%20images</a><br>（3）参考产品Occam的用户手册P71-82，标定各传感器的径向畸变K、失真参数D与外参R、T，校准误差使冲投影误差最小，最后投影至传感器中心的圆柱形面上缝合为全景图。<br>（4）cv::omnidir可做立体标定，平移量与实际测量值差5mm，其单位与指定对象坐标点时使用的单位相同。</p>
+</blockquote>
+<div id="comparison03" class="img-comparison-slider" data-before="./双鱼眼原图.jpg" data-after="./双鱼眼拼接图.jpg"></div>
+<div style="display: flex; justify-content: center; font-size: 14px; color: #000000ff; margin-top: -10px; text-align: center; width: 100%;">
+  <span>等距柱状投影（？）的拼接全景图 / 双鱼眼图</span>
+</div>
+2、全景图按视场角FOV重投影为透视模型下的局部平面图，局部透视图自由浏览的技术验证。
+3、单鱼眼静态赋色可行性验证。OpenCV::fisheye模块标定鱼眼畸变系数，等距投影模型+KB畸变模型（入射角畸变矫正）+非线性拉伸（镜头边缘做额外拉伸），将鱼眼图像投影为球形全景图。该框架下FOV210°镜头的可用范围160°，颜色与强度的偏移量在4cm以内。
+<img src="./单鱼眼静态赋色可行性验证.png" style="width:80%; height:auto;" alt="" title="">
 
-<p>2024.06 入职南方测绘广州分公司，任算法工程师（头衔仍为“算法工程师”）。<br>2024.07-2024.08 调整赋色逻辑为按时间匹配点与图像。<br>2024.09-</p>
-<h1 id="2025"><a href="#2025" class="headerlink" title="2025"></a>2025</h1><p>2025.02-</p>
-<p>&#x2F;&#x2F;TODO:待整理</p>
-<div id="comparison11" class="img-comparison-slider" data-before="./高密度01_前.png" data-after="./高密度01_后.png"></div>
+<p>2024.11-2024.12 1、开发高密度模式，一种增稠点云以提升着色表面积的后处理方案。</p>
+<blockquote>
+<p>需求：在维持点云厚度、特征不变的情况下增加点云密度，提升赋色观感。<br>算法流程：<br>（1）双边滤波平滑墙体上的噪声，压薄原始点云；<br>（2）点云按轨迹线视点拆分为多帧数据；<br>（3）基于点间法向量夹角，剔除表示拐角的表面点；<br>（4）点坐标变换至像素平面坐标系，取像素内深度值最小的为基点；<br>（5）在像素平面上随机增样点；<br>（6）视点与增样点之间构造射线，射线与基点的法向量平面求交，得直角坐标系下的增样点。<br>（7）点云分块体素化，再次平滑。</p>
+<p>缺陷：时序上的边缘点也会增稠，合并到最终点云后多趟次采集的区域易出现叠层现象；强度信息有晕染现象。</p>
+</blockquote>
+<div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items: flex-start;">
+  <div id="comparison04" 
+       class="img-comparison-slider" 
+       style="width: 53%; margin: 20px 0;"
+       data-before="./高密度01_前.png" 
+       data-after="./高密度01_后.png">
+  </div>
+  <div id="comparison05" 
+       class="img-comparison-slider" 
+       style="width: 43%; margin: 20px 0;"
+       data-before="./高密度02_前.png" 
+       data-after="./高密度02_后.png">
+  </div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #000000ff; margin-top: -10px;">
+    <div style="width: 53%; text-align: center;">
+        <span>增稠点云 / 原始点云</span>
+    </div>
+    <div style="width: 43%; text-align: center;">
+        <span>增稠点云 / 原始点云</span>
+    </div>
+</div>
 
-<div id="comparison12" class="img-comparison-slider" data-before="./高密度02_前.png" data-after="./高密度02_后.png"></div>
+<blockquote>
+<p>测试过的弃用方案</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>效果</th>
+<th>缺陷</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>mls滑动最小二乘采样</td>
+<td>点云稠密，维持特征细节</td>
+<td>耗时久，很多浮空、坐标极大的噪点</td>
+</tr>
+<tr>
+<td>德劳内三角化</td>
+<td>填补平坦区域孔洞</td>
+<td>难处理墙角树木细节（呈坨坨状），近似倾斜摄影模型</td>
+</tr>
+<tr>
+<td>近邻法平面增样</td>
+<td>点云稠密，维持特征细节</td>
+<td>需判断拐角近邻情况，增样面易交错导致墙体增厚</td>
+</tr>
+<tr>
+<td>orb-slam2稠密建图</td>
+<td>帧生成像素，变换为三维点</td>
+<td>未实现，参考思路</td>
+</tr>
+</tbody></table>
+<p>2、点云影像同步浏览。根据轨迹线视点，将全景图重映射为FOV20°~100°的局部平面图。</p>
+<div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+<img src="./同步浏览演示01.png" style="width:48%; height:auto;" alt="" title="">
+<img src="./同步浏览演示02.png" style="width:48%; height:auto;" alt="" title="">
+</div>
 
-<!--室外的效果不明显，以后再演示-->
-<div id="comparison13" class="img-comparison-slider" data-before="./nid优化_室外_前.png" data-after="./nid优化_室外_后.png"></div>
 
-<div id="comparison14" class="img-comparison-slider" data-before="./nid优化_室内_前.png" data-after="./nid优化_室内_后.png"></div>
+<h1 id="2025"><a href="#2025" class="headerlink" title="2025"></a>2025</h1><p>2025.01 钻研SFM，以图像做状态估计来优化lidar位姿，改善赋色错位现象。跑通OpenMVG，但流程容易因退化环境（转弯拐角）生成大误差的pose，弃用。<br><img src="./OpenMVG在退化环境产生错误pose.png" style="width:80%; height:auto;" alt="" title=""></p>
+<div style="display: flex; justify-content: center; font-size: 14px; color: #000000ff; margin-top: -10px; text-align: center; width: 100%;">
+  <span>OpenMVG运动估计的pose、稀疏点云。退化场景下有错误pose（红框）</span>
+</div>
 
-<p>——————————————</p>
+<p>2025.02-2025.03 钻研、移植PanoVLM中的运动状态估计部分，未耦合lidar pose的部分（匹配点对缺深度信息），可能因此导致pose精度较差，弃用。</p>
+<blockquote>
+<p>参考：<a target="_blank" rel="noopener" href="https://github.com/3dv-casia/PanoVLM">https://github.com/3dv-casia/PanoVLM</a><br>移植部分大体为<a target="_blank" rel="noopener" href="https://github.com/3dv-casia/PanoVLM/blob/main/main.cpp">main.cpp</a>的131-312部分。<br>SFM运动状态估计框架：SIFT特征检测、双向特征匹配+RANSAC筛选特征对、解基础矩阵、最大双联通子图提取、本质矩阵分解得相邻相片RT、三角化检查、光束平差（BA）优化（无回环检测）。<br>弃用原因：（1）原始分辨率的特征点提取耗时在秒级；（2）整段SFM轨迹存在累计误差产生的漂移、退化环境引起的尺度&#x2F;旋转错误，融合到SLAM位姿后未能有效修正远处较大的赋色错位现象（缺回环检测）；（3）在拐角处，全景图的特征匹配阶段易失败。拉高取帧间隔有所缓解，但耗时upup。</p>
+</blockquote>
+<p>2025.04-2025.05 1、研究新的雷达-相机外参标定方案：测试、适配数据到koide3开源的direct_visual_lidar_calibration工具箱（后简称DVLC）。新标定方案保证全景347°范围内的点云强度与颜色信息精确对齐。在6米范围内，静态数据点云强度与图像信息的偏移量为3cm。<br><img src="./DVLC_图像点云叠加显示.png" style="width:80%; height:auto;" alt="" title=""></p>
+<blockquote>
+<p>参考：<a target="_blank" rel="noopener" href="https://github.com/koide3/direct_visual_lidar_calibration">https://github.com/koide3/direct_visual_lidar_calibration</a><br>需求：旧标定方案仅校正旋转不能校正平移；旧方案需slam解算分数据，精度受slam算法与时间同步影响。</p>
+</blockquote>
+<p>2、移植赋色流程至内置相机动态赋色。额外引入倾角变换模块适配硬件布局，交接给新同事开发。</p>
+<p>2025.06 1、旋转式机械雷达的静态赋色可行性验证。<br>2、高密度模式优化：每轮视点增样过程中加入内存检测，可用内存耗尽前中断并体素化，避免爆内存闪退。<br>3、las去冗余：slam解算后构建全局体素地图，按时序、点间距离保留体素内一定数量的点，缓解点云局部太厚、密度不均匀问题。</p>
+<p>2025.07-2025.08 解决旋转式机械雷达动态赋色的难点；参考DVLC工具箱的标定方案，通过NID代价函数做位姿的后处理优化。</p>
+<blockquote>
+<p>（1）初始点云帧的地面映射人影图像。成因：仪器竖直静置时，雷达、相机间的轴线未垂直于水平面，视角的非同轴关系会使部分点映射至像素平面时落在采集者上。<br>解决方案：将起始静止阶段的点云映射到附近的回环图像帧。<br>（2）雷达头绕转轴（编码器）旋转，与相机非固连关系，难获取静态雷达帧。<br>解决方案：雷达定位的同事定义一个转轴零位处的坐标系，将静态采集下的雷达帧按转轴角度变化至零位坐标系，再按原方案标定雷达-&gt;相机外参。<br>（3）移动过程中转轴的非恒速旋转可能放大了slam轨迹线的位姿误差，导致多数的雷达、图像帧在像素坐标系下有较大偏移量。<br>解决方案：雷达位姿作初始估计，以每帧的图像灰度梯度及点云强度梯度算NID（归一化互信息）残差，迭代优化更准确的位姿供赋色的坐标映射。<br>额外的稳健性处理：强度信息滤除；双层图像金字塔减轻初始位姿偏差影响；glog日志拦截wolfe条件失败。</p>
+</blockquote>
+<div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items: flex-start;">
+  <div id="comparison06" 
+       class="img-comparison-slider" 
+       style="width: 48%; margin: 20px 0;"
+       data-before="./位姿优化_室外01_前.png" 
+       data-after="./位姿优化_室外01_后.png">
+  </div>
+  <div id="comparison07" 
+       class="img-comparison-slider" 
+       style="width: 48%; margin: 20px 0;"
+       data-before="./位姿优化_像素坐标01_前.png" 
+       data-after="./位姿优化_像素坐标01_后.png">
+  </div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #000000ff; margin-top: -10px;">
+    <div style="width: 48%; text-align: center;">
+        <span>位姿优化后 / 前的赋色点云</span>
+    </div>
+    <div style="width: 48%; text-align: center;">
+        <span>位姿优化后 / 前映射至像素的点云</span>
+    </div>
+</div>
+
+<div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items: flex-center;">
+  <div id="comparison08" 
+       class="img-comparison-slider" 
+       style="width: 48%; margin: 20px 0;"
+       data-before="./梯度计算_强度点云.jpg" 
+       data-after="./梯度计算_法平面梯度点云.jpg">
+  </div>
+  <img src="./梯度视角下的位姿优化过程.gif" style="width:48%" alt="" title="">
+</div>
+
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #000000ff; margin-top: -10px;">
+    <div style="width: 48%; text-align: center;">
+        <span>法平面计算的强度梯度点云 / 强度点云</span>
+    </div>
+    <div style="width: 48%; text-align: center;">
+        <span>梯度视角下的位姿优化过程</span>
+    </div>
+</div>
+
+
 <h1 id="next-time"><a href="#next-time" class="headerlink" title="next time"></a>next time</h1><p>阿巴阿巴，待补充，，，</p>
-<!--
-# TODO:整理
-
-
-2023.4-2023.6 SLAM生成惯导系统的轨迹线。
-2023.5-至今 撰写建筑物点云三维模型重建的论文。
-
-关于三维点云数据的提取研究。使用C++和PCL库，对含有道路两侧地物的点云数据，实现聚类分割效果。
-
-关于三维场景构建。基于卫星遥感影像及数字测图得到的CAD图纸，使用3dMax创建建筑物模型，导入unity中构建校园漫游场景。
-
--->
 
       </div>
       
